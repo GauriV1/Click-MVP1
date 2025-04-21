@@ -1,0 +1,108 @@
+.tagline {
+  text-align: center;
+  padding: 20rem 2rem 4rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.tagline h1 {
+  font-size: 4.5rem;
+  font-weight: 700;
+  margin-bottom: 2rem;
+  line-height: 1.2;
+  font-family: 'Manrope', sans-serif;
+  letter-spacing: -0.02em;
+  background: linear-gradient(135deg, #fff 0%, rgba(255, 255, 255, 0.8) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.tagline h2 {
+  font-size: 2rem;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 3rem;
+  font-family: 'Manrope', sans-serif;
+  letter-spacing: 0;
+  line-height: 1.5;
+}
+
+.cta-buttons {
+  display: flex;
+  gap: 1.5rem;
+  justify-content: center;
+  margin-top: 2rem;
+}
+
+.cta-button {
+  padding: 1.6rem 4.5rem;
+  font-size: 1.8rem;
+  border-radius: 16px;
+  cursor: pointer;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  font-family: 'Manrope', sans-serif;
+  letter-spacing: 0;
+  font-weight: 500;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 320px;
+  transform: scale(1);
+}
+
+.primary-cta {
+  background: #fff;
+  color: #000;
+  border: none;
+  font-weight: 700;
+  box-shadow: 0 4px 20px rgba(255, 255, 255, 0.2);
+  position: relative;
+  overflow: hidden;
+}
+
+.primary-cta:hover {
+  background: #fff;
+  transform: translateY(-4px) scale(1.05);
+  box-shadow: 0 8px 30px rgba(255, 255, 255, 0.4);
+}
+
+.primary-cta:active {
+  transform: translateY(2px) scale(0.98);
+}
+
+.secondary-cta {
+  background: transparent;
+  color: #fff;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.secondary-cta:hover {
+  border-color: #fff;
+  transform: translateY(-2px);
+}
+
+@media (max-width: 768px) {
+  .tagline {
+    padding: 12rem 1.5rem 3rem;
+  }
+
+  .tagline h1 {
+    font-size: 3.2rem;
+  }
+
+  .tagline h2 {
+    font-size: 1.6rem;
+  }
+
+  .cta-button {
+    padding: 1.2rem 3rem;
+    font-size: 1.4rem;
+    min-width: 260px;
+  }
+}
+
+.services-section {
+  margin-top: 10rem;
+  padding-top: 10rem;
+} 

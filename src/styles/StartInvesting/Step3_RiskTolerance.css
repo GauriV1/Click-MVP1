@@ -1,0 +1,71 @@
+.risk-step {
+  max-width: 600px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.risk-step h2 {
+  font-size: 2.2rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+.risk-step p {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 1rem;
+  margin-bottom: 2rem;
+}
+
+.risk-options {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.25rem;
+  margin-bottom: 2rem;
+}
+
+.risk-option {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 1.5rem;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  text-align: left;
+}
+
+.risk-option h3 {
+  font-size: 1.2rem;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: #fff;
+}
+
+.risk-option p {
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.8);
+  margin-bottom: 1rem;
+  text-align: left;
+  line-height: 1.4;
+}
+
+.risk-option ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.risk-option li {
+  color: rgba(255, 255, 255, 0.8);
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  padding-left: 1rem;
+  position: relative;
+}
+
+.risk-option li:before {
+  content: "•";
+  position: absolute;
+  left: 0;
+  color: #fff;
+} 

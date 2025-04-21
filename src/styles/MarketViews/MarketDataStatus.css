@@ -1,0 +1,80 @@
+.market-data-status-container {
+  padding: 15px;
+  border-radius: 8px;
+  margin: 10px 0;
+  background: #f8f9fa;
+}
+
+.market-data-status {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px;
+}
+
+.market-data-status p {
+  margin: 5px 0;
+}
+
+/* Loading state */
+.market-data-status.loading .spinner {
+  width: 30px;
+  height: 30px;
+  border: 3px solid #f3f3f3;
+  border-top: 3px solid #3498db;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 10px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Ready state */
+.market-data-status.ready {
+  color: #2ecc71;
+}
+
+.market-data-status.ready .success-icon {
+  font-size: 24px;
+  margin-bottom: 10px;
+}
+
+.market-data-status.ready .stats {
+  margin-top: 10px;
+  text-align: center;
+  color: #333;
+}
+
+.market-data-status.ready .stats .failures {
+  color: #e74c3c;
+}
+
+.market-data-status.ready .stats .timestamp {
+  color: #7f8c8d;
+  font-size: 0.9em;
+  margin-top: 5px;
+}
+
+/* Error state */
+.market-data-status.error {
+  color: #e74c3c;
+}
+
+.market-data-status.error .error-icon {
+  font-size: 24px;
+  margin-bottom: 10px;
+}
+
+.market-data-status.error .error-message {
+  color: #c0392b;
+  font-size: 0.9em;
+  margin-top: 5px;
+}
+
+/* Idle state */
+.market-data-status.idle {
+  color: #7f8c8d;
+} 

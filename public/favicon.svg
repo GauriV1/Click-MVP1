@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background Circle -->
+  <circle cx="16" cy="16" r="16" fill="#000000"/>
+  
+  <!-- Letter C -->
+  <path d="M20 10C20 10 16 10 14 10C12 10 10 12 10 16C10 20 12 22 14 22C16 22 20 22 20 22"
+        stroke="#FFFFFF" stroke-width="3" stroke-linecap="round"/>
+  
+  <!-- Upward Arrow -->
+  <path d="M16 18L16 14M16 14L14 16M16 14L18 16"
+        stroke="#4F46E5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+</svg> 
