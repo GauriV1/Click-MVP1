@@ -1,7 +1,12 @@
 import axios from 'axios';
 
+const FINNHUB_API_KEY = process.env.REACT_APP_FINNHUB_API_KEY;
+
+if (!FINNHUB_API_KEY) {
+  console.error('Missing Finnhub API key. Please set REACT_APP_FINNHUB_API_KEY environment variable.');
+}
+
 // Finnhub API configuration
-const FINNHUB_API_KEY = 'd021rc9r01qt2u31gdc0d021rc9r01qt2u31gdcg';
 const FINNHUB_BASE_URL = 'https://finnhub.io/api/v1';
 
 // Cache for storing stock data
