@@ -2,15 +2,12 @@ import axios from 'axios';
 
 // API Configuration
 const FINNHUB_API_KEY = process.env.REACT_APP_FINNHUB_API_KEY;
-
-// Validate API key
-if (!FINNHUB_API_KEY) {
-  console.error('Missing Finnhub API key. Please set REACT_APP_FINNHUB_API_KEY environment variable.');
-  throw new Error('Missing REACT_APP_FINNHUB_API_KEY environment variable');
-}
-
-// Finnhub API configuration
 const FINNHUB_BASE_URL = 'https://finnhub.io/api/v1';
+const USE_MOCK_DATA = !FINNHUB_API_KEY || FINNHUB_API_KEY === 'your_finnhub_api_key_here';
+
+if (USE_MOCK_DATA) {
+  console.warn('Missing Finnhub API key. Using fallback data.');
+}
 
 // Cache for storing stock data
 const stockCache = new Map();
@@ -43,12 +40,30 @@ const TICKERS = {
   ]
 };
 
+// Mock data generation
+const generateMockStockData = (symbol) => ({
+  symbol,
+  price: 150 + Math.random() * 10,
+  change: (Math.random() * 2 - 1) * 5,
+  changePercent: (Math.random() * 2 - 1) * 3,
+  volume: Math.floor(Math.random() * 1000000),
+  high: 155 + Math.random() * 10,
+  low: 145 + Math.random() * 10,
+  open: 150 + Math.random() * 10,
+  previousClose: 150 + Math.random() * 10,
+  timestamp: Date.now()
+});
+
 /**
- * Fetches real-time stock data from Finnhub
+ * Fetches real-time stock data from Finnhub or returns mock data
  * @param {string} symbol - Stock symbol (e.g., 'AAPL', 'GOOGL')
  * @returns {Promise<Object>} Stock data
  */
 export const getStockData = async (symbol) => {
+  if (USE_MOCK_DATA) {
+    return generateMockStockData(symbol);
+  }
+
   try {
     // Check cache first
     const cachedData = stockCache.get(symbol);
@@ -94,6 +109,10 @@ export const getStockData = async (symbol) => {
  * @returns {Promise<Object[]>} Array of stock data
  */
 export const getMultipleStockData = async (symbols) => {
+  if (USE_MOCK_DATA) {
+    return Promise.all(symbols.map(generateMockStockData));
+  }
+
   console.log('Fetching data for multiple symbols:', symbols);
   const results = [];
   for (const symbol of symbols) {
@@ -172,6 +191,10 @@ const checkRateLimit = () => {
  * @param {Function} callback - Callback function for updates
  */
 export const startRealTimeUpdates = (symbol, callback) => {
+  if (USE_MOCK_DATA) {
+    console.log('Real-time updates not available in fallback mode');
+    return;
+  }
   console.log(`Starting real-time updates for ${symbol}`);
   const socket = new WebSocket(`wss://ws.finnhub.io?token=${FINNHUB_API_KEY}`);
 
@@ -218,9 +241,13 @@ export const startRealTimeUpdates = (symbol, callback) => {
 };
 
 /**
- * Stops real-time updates for a symbol
+ * Stops the WebSocket connection for real-time updates
  * @param {string} symbol - Stock symbol
  */
 export const stopRealTimeUpdates = (symbol) => {
+  if (USE_MOCK_DATA) {
+    console.log('Real-time updates not available in fallback mode');
+    return;
+  }
   console.log(`Stopping real-time updates for ${symbol}`);
 }; 
