@@ -2,15 +2,15 @@ import axios from 'axios';
 
 // API Configuration
 const config = {
-  BASE_URL: process.env.GROK_API_URL || 'https://api.x.ai/v1',
-  API_KEY: process.env.GROK_API_KEY,
+  BASE_URL: process.env.REACT_APP_GROK_API_URL || 'https://api.x.ai/v1',
+  API_KEY: process.env.REACT_APP_GROK_API_KEY,
   MODEL: 'grok-3-mini-fast-beta'
 };
 
 // Validate API key
 if (!config.API_KEY) {
-  console.error('Missing Grok API key. Please set GROK_API_KEY environment variable.');
-  throw new Error('API key not found');
+  console.error('Missing Grok API key. Please set REACT_APP_GROK_API_KEY environment variable.');
+  throw new Error('Missing REACT_APP_GROK_API_KEY environment variable');
 }
 
 // Create an axios instance with default configuration
