@@ -290,6 +290,38 @@ const validatePredictionResponse = (response) => {
   return true;
 };
 
+// Transform API response into the expected format
+const transformResponse = (response) => {
+  if (!response.data?.choices?.[0]?.message?.content) {
+    console.error('Invalid response structure:', response);
+    throw new Error('Invalid API response structure: missing content');
+  }
+
+  try {
+    const content = response.data.choices[0].message.content;
+    console.log('Parsing response content:', content);
+    
+    const parsedContent = JSON.parse(content);
+    console.log('Parsed content:', parsedContent);
+    
+    // If the response contains an error message, throw it
+    if (parsedContent.error) {
+      throw new Error(`API Error: ${parsedContent.error} - ${parsedContent.notes || 'No additional details'}`);
+    }
+    
+    // Validate the parsed response
+    validatePredictionResponse(parsedContent);
+    
+    return parsedContent;
+  } catch (error) {
+    if (error instanceof SyntaxError) {
+      console.error('Failed to parse response content:', error);
+      throw new Error('Failed to parse API response as JSON');
+    }
+    throw error;
+  }
+};
+
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 async function makeApiRequest(payload) {

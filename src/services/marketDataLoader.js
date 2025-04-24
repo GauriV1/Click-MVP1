@@ -331,4 +331,48 @@ const loadAllMarketData = async (forceReload = false) => {
           await new Promise(resolve => setTimeout(resolve, batchDelay));
         }
       } catch (error) {
-        debug(`
+        debug(`Batch ${batchNumber}/${totalBatches} failed: ${error.message}`);
+        failureCount += batch.length;
+        retryQueue.push(...batch);
+      }
+    }
+    
+    // Update load tracking
+    lastLoadTime = now;
+    lastLoadType = isOpenUpdate ? 'open' : 'close';
+    isInitialLoad = false;
+    
+    // Emit final status
+    const detail = {
+      total: allSymbols.length,
+      loaded: successCount,
+      failed: failureCount,
+      timestamp: now.toISOString(),
+      updateType: isOpenUpdate ? 'market_open' : 'market_close',
+      stocks: STOCK_LIST.length,
+      etfs: ETF_LIST.length,
+      bonds: BOND_LIST.length,
+      cached: false
+    };
+    
+    marketDataEvents.dispatchEvent(new CustomEvent(MARKET_DATA_READY, { detail }));
+    return { successCount, failureCount, cached: false };
+    
+  } catch (error) {
+    debug(`Fatal error loading market data: ${error.message}`);
+    marketDataEvents.dispatchEvent(new CustomEvent(MARKET_DATA_ERROR, { 
+      detail: { error: error.message, timestamp: now.toISOString() }
+    }));
+    throw error;
+  }
+};
+
+// Export the functions
+export {
+  loadAllMarketData,
+  onMarketDataReady,
+  onMarketDataLoading,
+  onMarketDataError,
+  getNextMarketOpen,
+  getNextMarketClose
+};
