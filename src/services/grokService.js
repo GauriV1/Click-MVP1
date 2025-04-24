@@ -292,32 +292,24 @@ const validatePredictionResponse = (response) => {
 
 // Transform API response into the expected format
 const transformResponse = (response) => {
-  if (!response.data?.choices?.[0]?.message?.content) {
-    console.error('Invalid response structure:', response);
-    throw new Error('Invalid API response structure: missing content');
-  }
-
   try {
-    const content = response.data.choices[0].message.content;
-    console.log('Parsing response content:', content);
+    console.log('Transforming response:', response);
     
-    const parsedContent = JSON.parse(content);
-    console.log('Parsed content:', parsedContent);
-    
-    // If the response contains an error message, throw it
-    if (parsedContent.error) {
-      throw new Error(`API Error: ${parsedContent.error} - ${parsedContent.notes || 'No additional details'}`);
+    // If response is already an object, no need to parse
+    if (typeof response === 'object' && response !== null) {
+      console.log('Response is already an object, skipping parsing');
+      return response;
     }
-    
-    // Validate the parsed response
-    validatePredictionResponse(parsedContent);
-    
-    return parsedContent;
+
+    // If it's a string, try to parse it
+    if (typeof response === 'string') {
+      console.log('Parsing response string as JSON');
+      return JSON.parse(response);
+    }
+
+    throw new Error('Invalid response type: ' + typeof response);
   } catch (error) {
-    if (error instanceof SyntaxError) {
-      console.error('Failed to parse response content:', error);
-      throw new Error('Failed to parse API response as JSON');
-    }
+    console.error('Error transforming response:', error);
     throw error;
   }
 };
@@ -524,22 +516,31 @@ const getFallbackPredictions = (preferences) => {
   console.log('Generating fallback predictions for:', preferences);
   
   // Extract key preferences
-  const { riskProfile, monthlySalary, depositAmount, depositFrequency } = preferences;
+  const { riskProfile, monthlySalary = 0, depositAmount = 0, depositFrequency } = preferences;
   
   // Calculate monthly investment amount
-  let monthlyInvestment = depositAmount;
+  let monthlyInvestment = Number(depositAmount) || 0;
   if (depositFrequency === 'weekly') {
-    monthlyInvestment = depositAmount * 4.33;
+    monthlyInvestment = monthlyInvestment * 4.33;
   } else if (depositFrequency === 'yearly') {
-    monthlyInvestment = depositAmount / 12;
+    monthlyInvestment = monthlyInvestment / 12;
   }
   
   // Calculate investment percentage of salary
-  const investmentPercentage = (monthlyInvestment / monthlySalary) * 100;
+  const monthlySalaryNum = Number(monthlySalary) || 1; // Prevent division by zero
+  const investmentPercentage = (monthlyInvestment / monthlySalaryNum) * 100;
   
   // Generate appropriate growth projections based on risk profile
-  let projectedGrowth = {};
-  let expectedReturn = {};
+  let projectedGrowth = {
+    '1yr': 0,
+    '5yr': 0,
+    '10yr': 0
+  };
+  
+  let expectedReturn = {
+    min: 0,
+    max: 0
+  };
   
   if (riskProfile === 'conservative') {
     projectedGrowth = {
@@ -581,25 +582,33 @@ const getFallbackPredictions = (preferences) => {
     ageConsideration: "Based on your age and risk profile, we've maintained your selected risk level."
   };
   
-  // Generate investment suggestions
+  // Generate investment suggestions with safe number handling
   const suggestions = [];
-  
-  if (riskProfile === 'conservative') {
-    suggestions.push(`Allocate $${(monthlyInvestment * 0.45).toFixed(2)} to VTI (Vanguard Total Stock Market ETF)`);
-    suggestions.push(`Allocate $${(monthlyInvestment * 0.25).toFixed(2)} to BND (Vanguard Total Bond Market ETF)`);
-    suggestions.push(`Allocate $${(monthlyInvestment * 0.15).toFixed(2)} to VXUS (Vanguard Total International Stock ETF)`);
-    suggestions.push(`Allocate $${(monthlyInvestment * 0.15).toFixed(2)} to VYM (Vanguard High Dividend Yield ETF)`);
-  } else if (riskProfile === 'moderate') {
-    suggestions.push(`Allocate $${(monthlyInvestment * 0.55).toFixed(2)} to VTI (Vanguard Total Stock Market ETF)`);
-    suggestions.push(`Allocate $${(monthlyInvestment * 0.20).toFixed(2)} to BND (Vanguard Total Bond Market ETF)`);
-    suggestions.push(`Allocate $${(monthlyInvestment * 0.15).toFixed(2)} to VXUS (Vanguard Total International Stock ETF)`);
-    suggestions.push(`Allocate $${(monthlyInvestment * 0.10).toFixed(2)} to VGT (Vanguard Information Technology ETF)`);
-  } else { // aggressive
-    suggestions.push(`Allocate $${(monthlyInvestment * 0.65).toFixed(2)} to VTI (Vanguard Total Stock Market ETF)`);
-    suggestions.push(`Allocate $${(monthlyInvestment * 0.15).toFixed(2)} to VGT (Vanguard Information Technology ETF)`);
-    suggestions.push(`Allocate $${(monthlyInvestment * 0.10).toFixed(2)} to VXUS (Vanguard Total International Stock ETF)`);
-    suggestions.push(`Allocate $${(monthlyInvestment * 0.10).toFixed(2)} to ARKK (ARK Innovation ETF)`);
-  }
+  const allocations = riskProfile === 'conservative' 
+    ? [
+        { percent: 0.45, fund: 'VTI (Vanguard Total Stock Market ETF)' },
+        { percent: 0.25, fund: 'BND (Vanguard Total Bond Market ETF)' },
+        { percent: 0.15, fund: 'VXUS (Vanguard Total International Stock ETF)' },
+        { percent: 0.15, fund: 'VYM (Vanguard High Dividend Yield ETF)' }
+      ]
+    : riskProfile === 'moderate'
+    ? [
+        { percent: 0.55, fund: 'VTI (Vanguard Total Stock Market ETF)' },
+        { percent: 0.20, fund: 'BND (Vanguard Total Bond Market ETF)' },
+        { percent: 0.15, fund: 'VXUS (Vanguard Total International Stock ETF)' },
+        { percent: 0.10, fund: 'VGT (Vanguard Information Technology ETF)' }
+      ]
+    : [ // aggressive
+        { percent: 0.65, fund: 'VTI (Vanguard Total Stock Market ETF)' },
+        { percent: 0.15, fund: 'VGT (Vanguard Information Technology ETF)' },
+        { percent: 0.10, fund: 'VXUS (Vanguard Total International Stock ETF)' },
+        { percent: 0.10, fund: 'ARKK (ARK Innovation ETF)' }
+      ];
+
+  allocations.forEach(({ percent, fund }) => {
+    const amount = monthlyInvestment * percent;
+    suggestions.push(`Allocate $${amount.toFixed(2)} to ${fund}`);
+  });
   
   // Generate warnings if investment percentage is too high
   const warnings = [];
@@ -608,9 +617,15 @@ const getFallbackPredictions = (preferences) => {
   }
   
   // Generate notes and reasoning
-  const notes = `Based on your ${riskProfile} risk profile, we recommend a diversified portfolio with a focus on ${riskProfile === 'conservative' ? 'stability and income' : (riskProfile === 'moderate' ? 'balanced growth' : 'aggressive growth')}.`;
+  const notes = `Based on your ${riskProfile} risk profile, we recommend a diversified portfolio with a focus on ${
+    riskProfile === 'conservative' ? 'stability and income' : 
+    riskProfile === 'moderate' ? 'balanced growth' : 
+    'aggressive growth'
+  }.`;
   
-  const reasoning = `Your monthly investment of $${monthlyInvestment.toFixed(2)} (${investmentPercentage.toFixed(1)}% of your monthly salary) is ${investmentPercentage > 20 ? 'above' : 'within'} the recommended range. The ${riskProfile} risk profile is appropriate for your investment goals.`;
+  const reasoning = `Your monthly investment of $${monthlyInvestment.toFixed(2)} (${investmentPercentage.toFixed(1)}% of your monthly salary) is ${
+    investmentPercentage > 20 ? 'above' : 'within'
+  } the recommended range. The ${riskProfile} risk profile is appropriate for your investment goals.`;
   
   // Generate growth model
   const growthModel = {
@@ -631,20 +646,14 @@ const getFallbackPredictions = (preferences) => {
   };
   
   return {
-    monthlyInvestmentAmount: monthlyInvestment,
-    investmentPercentageOfSalary: investmentPercentage,
-    projectedGrowth: {
-      oneYear: projectedGrowth['1yr'],
-      fiveYear: projectedGrowth['5yr'],
-      tenYear: projectedGrowth['10yr']
-    },
-    expectedReturn: expectedReturn,
-    riskMetrics: riskMetrics,
-    suggestions: suggestions,
-    warnings: warnings,
-    notes: notes,
-    reasoning: reasoning,
-    growthModel: growthModel,
+    projectedGrowth,
+    expectedReturn,
+    riskMetrics,
+    suggestions,
+    warnings,
+    notes,
+    reasoning,
+    growthModel,
     isDemo: true
   };
 };
