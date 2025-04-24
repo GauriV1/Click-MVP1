@@ -1,12 +1,12 @@
 import axios from 'axios';
 
 // API Configuration
-const FINNHUB_API_KEY = process.env.FINHUB_API_KEY;
+const FINNHUB_API_KEY = process.env.REACT_APP_FINNHUB_API_KEY;
 
 // Validate API key
 if (!FINNHUB_API_KEY) {
-  console.error('Missing Finnhub API key. Please set FINHUB_API_KEY environment variable.');
-  throw new Error('API key not found');
+  console.error('Missing Finnhub API key. Please set REACT_APP_FINNHUB_API_KEY environment variable.');
+  throw new Error('Missing REACT_APP_FINNHUB_API_KEY environment variable');
 }
 
 // Finnhub API configuration

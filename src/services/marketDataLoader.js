@@ -6,18 +6,18 @@ const { BOND_LIST } = require('../components/MarketViews/data/bondData');
 const { setCachedData, getCachedData } = require('../components/MarketViews/utils/marketCache');
 
 // API Configuration
-const API_TOKEN = process.env.FINHUB_API_KEY;
+const API_TOKEN = process.env.REACT_APP_FINNHUB_API_KEY;
 const API_BASE_URL = 'https://finnhub.io/api/v1';
 
 // Validate API key
 if (!API_TOKEN) {
-  console.error('Missing Finnhub API key. Please set FINHUB_API_KEY environment variable.');
-  throw new Error('API token not found');
+  console.error('Missing Finnhub API key. Please set REACT_APP_FINNHUB_API_KEY environment variable.');
+  throw new Error('Missing REACT_APP_FINNHUB_API_KEY environment variable');
 }
 
 // Check for demo mode
-if (!process.env.FINHUB_API_KEY) {
-  console.warn('[MarketDataLoader] Using default API token. Please set FINHUB_API_KEY environment variable for production use.');
+if (!process.env.REACT_APP_FINNHUB_API_KEY) {
+  console.warn('[MarketDataLoader] Using default API token. Please set REACT_APP_FINNHUB_API_KEY environment variable for production use.');
 }
 
 // Market timing constants
@@ -331,42 +331,4 @@ const loadAllMarketData = async (forceReload = false) => {
           await new Promise(resolve => setTimeout(resolve, batchDelay));
         }
       } catch (error) {
-        debug(`Batch ${batchNumber} failed: ${error}`);
-        marketDataEvents.dispatchEvent(new CustomEvent('batchError', { 
-          detail: { batchNumber, totalBatches, error: error.message }
-        }));
-      }
-    }
-    
-    // Process retry queue if any failures
-    if (retryQueue.length > 0) {
-      debug(`Retrying ${retryQueue.length} failed symbols...`);
-      // ... rest of the code ...
-    }
-  } catch (error) {
-    debug(`Market data load failed:`, error);
-    marketDataEvents.dispatchEvent(new CustomEvent('marketDataError', { 
-      detail: { error: error.message }
-    }));
-    return { successCount: 0, failureCount: 0, cached: false };
-  }
-  
-  // Update market data state
-  lastLoadTime = now;
-  lastLoadType = isOpenUpdate ? 'open' : 'close';
-  isInitialLoad = false;
-  
-  const cachedDetail = {
-    total: STOCK_LIST.length + ETF_LIST.length + BOND_LIST.length,
-    loaded: successCount,
-    failed: failureCount,
-    timestamp: now.toISOString(),
-    updateType: isOpenUpdate ? 'open' : 'close',
-    stocks: STOCK_LIST.length,
-    etfs: ETF_LIST.length,
-    bonds: BOND_LIST.length,
-    cached: false
-  };
-  marketDataEvents.dispatchEvent(new CustomEvent(MARKET_DATA_READY, { detail: cachedDetail }));
-  return { successCount, failureCount, cached: false };
-};
+        debug(`
