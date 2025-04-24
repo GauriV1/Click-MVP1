@@ -7,20 +7,22 @@ const config = {
   MODEL: 'grok-3-mini-fast-beta'
 };
 
-// Validate API key
-if (!config.API_KEY) {
-  console.error('Missing Grok API key. Please set GROK_API_KEY environment variable.');
-  throw new Error('API key not found');
-}
-
 // Create an axios instance with default configuration
 const grokClient = axios.create({
   baseURL: config.BASE_URL,
   headers: {
-    'Content-Type': 'application/json',
-    'Authorization': `Bearer ${config.API_KEY}`
+    'Content-Type': 'application/json'
   },
   timeout: 60000
+});
+
+// Add authorization header dynamically
+grokClient.interceptors.request.use((config) => {
+  if (!process.env.GROK_API_KEY) {
+    throw new Error('Missing Grok API key. Please set GROK_API_KEY environment variable.');
+  }
+  config.headers.Authorization = `Bearer ${process.env.GROK_API_KEY}`;
+  return config;
 });
 
 const MAX_RETRIES = 3;
@@ -437,80 +439,42 @@ async function makeApiRequest(payload) {
 
 export const getInvestmentPredictions = async (preferences) => {
   try {
-    // Log the preferences being sent
-    console.log('Sending preferences to Grok:', preferences);
-
     // Validate preferences first
     validateUserPreferences(preferences);
-    
+
+    // Log the preferences being sent
+    console.log('Sending preferences to Grok API:', preferences);
+
+    // Check for API key before making request
+    if (!process.env.GROK_API_KEY) {
+      console.warn('No Grok API key found, using fallback predictions');
+      if (process.env.REACT_APP_USE_FALLBACK_DATA === 'true') {
+        return getFallbackPredictions(preferences);
+      } else {
+        throw new Error('Missing Grok API key and fallback data is disabled');
+      }
+    }
+
     // Make the API request
-    let response;
-    try {
-      response = await makeApiRequest(preferences);
-      console.log('Successfully received predictions from Grok API');
-    } catch (apiError) {
-      console.error('Grok API request failed:', apiError);
-      
-      // Always use fallback data when API fails
-      console.log('Using fallback data due to API failure');
-      return {
-        predictions: getFallbackPredictions(preferences),
-        isDemo: true
-      };
-    }
-    
-    if (!response) {
-      console.log('No response received from Grok API, using fallback data');
-      return {
-        predictions: getFallbackPredictions(preferences),
-        isDemo: true
-      };
-    }
+    const response = await makeApiRequest({
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: JSON.stringify(preferences) }
+      ]
+    });
 
-    // Check if the response is just echoing back the user preferences
-    const userPrefKeys = ['age', 'monthlySalary', 'employmentStatus', 'depositAmount', 
-                         'depositFrequency', 'riskProfile', 'spendingHabits', 
-                         'liquidityNeeds', 'emergencyNeeds'];
-    
-    const isUserPrefsEcho = userPrefKeys.every(key => key in response);
-    
-    if (isUserPrefsEcho) {
-      console.log('API returned user preferences instead of predictions, using fallback data');
-      return {
-        predictions: getFallbackPredictions(preferences),
-        isDemo: true
-      };
-    }
-
-    // Validate the response format
-    try {
-      validatePredictionResponse(response);
-    } catch (validationError) {
-      console.error('Response validation failed:', validationError);
-      console.log('Using fallback data due to validation failure');
-      return {
-        predictions: getFallbackPredictions(preferences),
-        isDemo: true
-      };
-    }
-
-    console.log('Successfully received and validated predictions:', response);
-    
-    return {
-      predictions: response,
-      isDemo: false
-    };
-
+    // Validate and transform the response
+    return transformResponse(response);
   } catch (error) {
-    console.error('Investment prediction error:', error);
-    console.error('Error details:', error.response?.data || error.message);
+    console.error('Error getting investment predictions:', error);
     
-    // Always return fallback data on any error
-    console.log('Using fallback data due to error');
-    return {
-      predictions: getFallbackPredictions(preferences),
-      isDemo: true
-    };
+    // If fallback data is enabled, use it
+    if (process.env.REACT_APP_USE_FALLBACK_DATA === 'true') {
+      console.warn('Using fallback predictions due to error:', error.message);
+      return getFallbackPredictions(preferences);
+    }
+    
+    throw error;
   }
 };
 
@@ -609,10 +573,20 @@ const getFallbackPredictions = (preferences) => {
   
   // Generate growth model
   const growthModel = {
-    description: "Based on your age and risk profile, we've maintained your selected risk level.",
-    assumptions: [],
-    factors: [],
-    methodology: "The growth model used is a simplified version of the CAPM (Capital Asset Pricing Model) and incorporates factors such as market conditions, economic indicators, and inflation rates."
+    description: `Based on your age and risk profile, we've maintained your selected risk level.`,
+    assumptions: [
+      'Regular monthly contributions maintained',
+      'Market conditions align with historical averages',
+      `Risk profile remains ${riskProfile}`,
+      'No major economic disruptions'
+    ],
+    factors: [
+      'Historical market performance data',
+      'Risk-adjusted return calculations',
+      'Economic growth projections',
+      'Inflation expectations'
+    ],
+    methodology: `Growth projections use compound interest calculations adjusted for ${riskProfile} risk profile, incorporating market volatility and systematic risk factors.`
   };
   
   return {
@@ -634,31 +608,6 @@ const getFallbackPredictions = (preferences) => {
   };
 };
 
-const transformResponse = (response) => {
-  // Transform the growth model data
-  const growthModel = response.growthModel || {
-    description: `Investment growth model for ${response.riskProfile || 'your'} risk profile.`,
-    assumptions: response.assumptions || [],
-    factors: response.marketFactors || [],
-    methodology: response.methodology || 'Based on historical market data and risk-adjusted return calculations.'
-  };
-
-  return {
-    monthlyInvestmentAmount: response.monthlyInvestment,
-    investmentPercentageOfSalary: response.investmentPercentage,
-    projectedGrowth: {
-      oneYear: response.projectedGrowth?.oneYear || response.projectedGrowth?.['1yr'],
-      fiveYear: response.projectedGrowth?.fiveYear || response.projectedGrowth?.['5yr'],
-      tenYear: response.projectedGrowth?.tenYear || response.projectedGrowth?.['10yr']
-    },
-    suggestions: response.suggestions || [],
-    notes: response.notes || [],
-    reasoning: response.reasoning || '',
-    growthModel,
-    isDemo: false
-  };
-};
-
 export default {
   getInvestmentPredictions
-}; 
+};
