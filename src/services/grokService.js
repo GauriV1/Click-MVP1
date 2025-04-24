@@ -2,8 +2,8 @@ import axios from 'axios';
 
 // API Configuration
 const config = {
-  BASE_URL: process.env.GROK_API_URL || 'https://api.x.ai/v1',
-  API_KEY: process.env.GROK_API_KEY,
+  BASE_URL: process.env.REACT_APP_GROK_API_URL || 'https://api.x.ai/v1',
+  API_KEY: process.env.REACT_APP_GROK_API_KEY,
   MODEL: 'grok-3-mini-fast-beta'
 };
 
@@ -18,10 +18,10 @@ const grokClient = axios.create({
 
 // Add authorization header dynamically
 grokClient.interceptors.request.use((config) => {
-  if (!process.env.GROK_API_KEY) {
-    throw new Error('Missing Grok API key. Please set GROK_API_KEY environment variable.');
+  if (!process.env.REACT_APP_GROK_API_KEY) {
+    throw new Error('Missing Grok API key. Please set REACT_APP_GROK_API_KEY environment variable.');
   }
-  config.headers.Authorization = `Bearer ${process.env.GROK_API_KEY}`;
+  config.headers.Authorization = `Bearer ${process.env.REACT_APP_GROK_API_KEY}`;
   return config;
 });
 
@@ -446,7 +446,7 @@ export const getInvestmentPredictions = async (preferences) => {
     console.log('Sending preferences to Grok API:', preferences);
 
     // Check for API key before making request
-    if (!process.env.GROK_API_KEY) {
+    if (!process.env.REACT_APP_GROK_API_KEY) {
       console.warn('No Grok API key found, using fallback predictions');
       if (process.env.REACT_APP_USE_FALLBACK_DATA === 'true') {
         return getFallbackPredictions(preferences);
