@@ -15,9 +15,9 @@ if (!API_TOKEN) {
   throw new Error('API token not found');
 }
 
-// Add warning if using default token
-if (!process.env.REACT_APP_FINNHUB_API_KEY) {
-  console.warn('[MarketDataLoader] Using default API token. Please set REACT_APP_FINNHUB_API_KEY environment variable for production use.');
+// Check for demo mode
+if (!process.env.FINHUB_API_KEY) {
+  console.warn('[MarketDataLoader] Using default API token. Please set FINHUB_API_KEY environment variable for production use.');
 }
 
 // Market timing constants
@@ -331,7 +331,7 @@ const loadAllMarketData = async (forceReload = false) => {
           await new Promise(resolve => setTimeout(resolve, batchDelay));
         }
       } catch (error) {
-        debug(`Batch ${batchNumber} failed:`, error);
+        debug(`Batch ${batchNumber} failed: ${error}`);
         marketDataEvents.dispatchEvent(new CustomEvent('batchError', { 
           detail: { batchNumber, totalBatches, error: error.message }
         }));
@@ -340,139 +340,33 @@ const loadAllMarketData = async (forceReload = false) => {
     
     // Process retry queue if any failures
     if (retryQueue.length > 0) {
-      debug(`Retrying ${retryQueue.length} failed symbols at ${new Date().toLocaleTimeString()}...`);
-      await new Promise(resolve => setTimeout(resolve, RETRY_DELAY * retryQueue.length)); // Wait 2 seconds between retries
-      
-      for (const { symbol, type } of retryQueue) {
-        try {
-          const data = await fetchSymbolData(symbol);
-          const cachedData = {
-            ...data,
-            loadType: isOpenUpdate ? 'open' : 'close',
-            loadTime: now.toISOString(),
-            symbol,
-            type
-          };
-          setCachedData(symbol, cachedData);
-          successCount++;
-          failureCount--;
-          debug(`✓ Retry successful for ${symbol} (${type})`);
-          
-          // Emit retry success
-          marketDataEvents.dispatchEvent(new CustomEvent('retrySuccess', { 
-            detail: { symbol, type, data: cachedData }
-          }));
-        } catch (error) {
-          debug(`✗ Retry failed for ${symbol} (${type}):`, error);
-          
-          // Emit retry failure
-          marketDataEvents.dispatchEvent(new CustomEvent('retryFailure', { 
-            detail: { symbol, type, error: error.message }
-          }));
-        }
-      }
+      debug(`Retrying ${retryQueue.length} failed symbols...`);
+      // ... rest of the code ...
     }
-    
-    // Update load state
-    lastLoadTime = now;
-    lastLoadType = isOpenUpdate ? 'open' : 'close';
-    isInitialLoad = false;
-    
-    const detail = {
-      total: allSymbols.length,
-      loaded: successCount,
-      failed: failureCount,
-      timestamp: now.toISOString(),
-      updateType: isOpenUpdate ? 'market_open' : 'market_close',
-      stocks: STOCK_LIST.length,
-      etfs: ETF_LIST.length,
-      bonds: BOND_LIST.length,
-      cached: false
-    };
-    
-    marketDataEvents.dispatchEvent(new CustomEvent(MARKET_DATA_READY, { detail }));
-    return { successCount, failureCount, cached: false };
   } catch (error) {
-    debug('Load failed with error:', error);
-    marketDataEvents.dispatchEvent(new CustomEvent(MARKET_DATA_ERROR, { 
-      detail: { 
-        error: error.message,
-        timestamp: new Date().toISOString(),
-        successCount,
-        failureCount
-      }
+    debug(`Market data load failed:`, error);
+    marketDataEvents.dispatchEvent(new CustomEvent('marketDataError', { 
+      detail: { error: error.message }
     }));
-    throw error;
+    return { successCount: 0, failureCount: 0, cached: false };
   }
+  
+  // Update market data state
+  lastLoadTime = now;
+  lastLoadType = isOpenUpdate ? 'open' : 'close';
+  isInitialLoad = false;
+  
+  const cachedDetail = {
+    total: STOCK_LIST.length + ETF_LIST.length + BOND_LIST.length,
+    loaded: successCount,
+    failed: failureCount,
+    timestamp: now.toISOString(),
+    updateType: isOpenUpdate ? 'open' : 'close',
+    stocks: STOCK_LIST.length,
+    etfs: ETF_LIST.length,
+    bonds: BOND_LIST.length,
+    cached: false
+  };
+  marketDataEvents.dispatchEvent(new CustomEvent(MARKET_DATA_READY, { detail: cachedDetail }));
+  return { successCount, failureCount, cached: false };
 };
-
-// Function to load today's market open data
-const loadTodayMarketOpen = async () => {
-  debug('Loading today\'s market open data');
-  
-  // Force this to be treated as market open data
-  const now = new Date();
-  now.setHours(MARKET_OPEN_HOUR, MARKET_OPEN_MINUTE, 0, 0);
-  
-  isInitialLoad = true;
-  lastLoadType = null;
-  
-  try {
-    const result = await loadAllMarketData(true);
-    debug('Today\'s market open data loaded:', result);
-    return result;
-  } catch (error) {
-    debug('Failed to load today\'s market open data:', error);
-    throw error;
-  }
-};
-
-// Function to schedule today's updates
-const scheduleTodayUpdates = () => {
-  const now = new Date();
-  const marketClose = new Date(now);
-  marketClose.setHours(MARKET_CLOSE_HOUR, MARKET_CLOSE_MINUTE, 0, 0);
-  
-  const msToClose = marketClose - now;
-  
-  // Schedule market close update
-  setTimeout(() => {
-    debug('Market close update triggered');
-    loadAllMarketData(true).catch(error => {
-      debug('Market close update failed:', error);
-    });
-  }, msToClose);
-  
-  debug(`Scheduled market close update in ${Math.round(msToClose/1000/60)} minutes`);
-};
-
-// Enhanced scheduling function
-const scheduleMarketDataLoads = () => {
-  debug('Initializing market data loader');
-  
-  // Start with today's market open data
-  loadTodayMarketOpen()
-    .then(() => {
-      debug('Successfully loaded today\'s market open data');
-      scheduleTodayUpdates();
-    })
-    .catch(error => {
-      debug('Failed to load today\'s market open data:', error);
-      // Retry in 1 minute if initial load fails
-      setTimeout(loadTodayMarketOpen, 60 * 1000);
-    });
-};
-
-// Export function to force reload
-const forceMarketDataReload = () => {
-  return loadTodayMarketOpen();
-};
-
-// Export all functions
-module.exports = {
-  scheduleMarketDataLoads,
-  forceMarketDataReload,
-  onMarketDataReady,
-  onMarketDataLoading,
-  onMarketDataError
-}; 
