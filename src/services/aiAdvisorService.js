@@ -1,18 +1,24 @@
 import axios from 'axios';
 
 // API Configuration
-const API_CONFIG = {
-  BASE_URL: process.env.REACT_APP_GROK_API_URL || 'https://api.x.ai/v1',
-  API_KEY: process.env.REACT_APP_GROK_API_KEY,
+const config = {
+  BASE_URL: process.env.GROK_API_URL || 'https://api.x.ai/v1',
+  API_KEY: process.env.GROK_API_KEY,
   MODEL: 'grok-3-mini-fast-beta'
 };
 
+// Validate API key
+if (!config.API_KEY) {
+  console.error('Missing Grok API key. Please set GROK_API_KEY environment variable.');
+  throw new Error('API key not found');
+}
+
 // Create an axios instance with default configuration
 const grokClient = axios.create({
-  baseURL: API_CONFIG.BASE_URL,
+  baseURL: config.BASE_URL,
   headers: {
     'Content-Type': 'application/json',
-    'Authorization': `Bearer ${API_CONFIG.API_KEY}`
+    'Authorization': `Bearer ${config.API_KEY}`
   },
   timeout: 60000
 });
@@ -106,7 +112,7 @@ async function makeApiRequest(question) {
   while (attempt < MAX_RETRIES) {
     try {
       const requestPayload = {
-        model: API_CONFIG.MODEL,
+        model: config.MODEL,
         temperature: 0.7, // Higher temperature for more conversational responses
         messages: [
           {

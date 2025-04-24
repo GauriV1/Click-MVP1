@@ -12,6 +12,7 @@ import {
   Legend,
   Filler
 } from 'chart.js';
+import GrowthModelBox from '../GrowthModelBox';
 import '../../styles/StartInvesting/InvestmentPredictions.css';
 
 // Register ChartJS components
@@ -229,6 +230,24 @@ const InvestmentPredictions = ({ predictions, monthlyAmount, preferences }) => {
           ))}
         </div>
       </div>
+
+      <GrowthModelBox 
+        growthModel={{
+          description: predictions.growthModel?.description || 'Investment growth model based on your risk profile and market conditions.',
+          assumptions: predictions.growthModel?.assumptions || [
+            'Market conditions remain relatively stable',
+            'Regular investment contributions as planned',
+            'Risk profile remains consistent'
+          ],
+          factors: predictions.growthModel?.factors || [
+            'Current market trends',
+            'Historical volatility',
+            'Economic indicators'
+          ],
+          methodology: predictions.growthModel?.methodology || 'Calculations factor in compound interest, market volatility, and risk adjustments'
+        }}
+        projectedGrowth={predictions.projectedGrowth}
+      />
 
       {predictions.disclaimer && (
         <div className="demo-disclaimer">

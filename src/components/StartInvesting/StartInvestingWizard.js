@@ -6,6 +6,7 @@ import RiskProfileStep from './RiskProfileStep';
 import SpendingHabitsStep from './SpendingHabitsStep';
 import Step5_LifestyleIncome from './Step5_LifestyleIncome';
 import InvestmentPredictions from './InvestmentPredictions';
+import LoadingScreen from './LoadingScreen';
 import { getInvestmentPredictions } from '../../services/grokService';
 import '../../styles/StartInvesting/StartInvestingWizard.css';
 
@@ -55,7 +56,8 @@ const initialPreferences = {
   liquidityNeeds: '',         // 'high', 'medium', 'low'
   employmentStatus: '',        // 'full-time', 'part-time', 'self-employed', 'student'
   monthlySalary: '',          // numeric string
-  emergencyNeeds: ''          // numeric string (emergency fund amount in dollars)
+  emergencyNeeds: '',          // numeric string (emergency fund amount in dollars)
+  age: ''                     // numeric string
 };
 
 // Required fields for validation
@@ -67,52 +69,71 @@ const requiredFields = [
   'spendingHabits',
   'liquidityNeeds',
   'employmentStatus',
-  'monthlySalary'
+  'monthlySalary',
+  'age'
 ];
 
 const validatePreferences = (preferences) => {
-  // Check for missing required fields
-  const missing = requiredFields.filter(f => !preferences[f]);
-  if (missing.length > 0) {
-    throw new Error(`Please complete: ${missing.join(', ')}`);
+  // Check for required fields
+  for (const field of requiredFields) {
+    if (!preferences[field] || preferences[field].trim() === '') {
+      return {
+        isValid: false,
+        error: `Please provide your ${field.replace(/([A-Z])/g, ' $1').toLowerCase()}`
+      };
+    }
   }
 
-  // Validate field values
-  if (!['partial', 'whole'].includes(preferences.investmentType)) {
-    throw new Error('Invalid investment type');
+  // Validate age
+  const age = parseInt(preferences.age);
+  if (isNaN(age) || age < 18 || age > 120) {
+    return {
+      isValid: false,
+      error: 'Please enter a valid age between 18 and 120'
+    };
   }
 
-  if (!['weekly', 'monthly', 'yearly', 'ad hoc'].includes(preferences.depositFrequency)) {
-    throw new Error('Invalid deposit frequency');
+  // Validate monthly salary
+  const salary = parseFloat(preferences.monthlySalary);
+  if (isNaN(salary) || salary <= 0) {
+    return {
+      isValid: false,
+      error: 'Please enter a valid monthly salary'
+    };
   }
 
-  const amount = Number(preferences.depositAmount);
-  if (isNaN(amount) || amount <= 0) {
-    throw new Error('Deposit amount must be a positive number');
+  // Validate deposit amount
+  const deposit = parseFloat(preferences.depositAmount);
+  if (isNaN(deposit) || deposit <= 0) {
+    return {
+      isValid: false,
+      error: 'Please enter a valid deposit amount'
+    };
   }
 
-  if (!['conservative', 'moderate', 'aggressive'].includes(preferences.riskProfile)) {
-    throw new Error('Invalid risk profile');
-  }
+  return {
+    isValid: true,
+    error: null
+  };
+};
 
-  if (!['consistent', 'variable'].includes(preferences.spendingHabits)) {
-    throw new Error('Invalid spending habits');
-  }
-
-  if (!['high', 'medium', 'low'].includes(preferences.liquidityNeeds)) {
-    throw new Error('Invalid liquidity needs');
-  }
-
-  if (!['full-time', 'part-time', 'self-employed', 'student'].includes(preferences.employmentStatus)) {
-    throw new Error('Invalid employment status');
-  }
-
-  const monthlySalary = Number(preferences.monthlySalary);
-  if (isNaN(monthlySalary) || monthlySalary <= 0) {
-    throw new Error('Monthly salary must be a positive number');
-  }
-
-  return true;
+const ErrorMessage = ({ message }) => {
+  if (!message) return null;
+  
+  return (
+    <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-4">
+      <div className="flex">
+        <div className="flex-shrink-0">
+          <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+          </svg>
+        </div>
+        <div className="ml-3">
+          <p className="text-sm text-red-700">{message}</p>
+        </div>
+      </div>
+    </div>
+  );
 };
 
 const StartInvestingWizard = () => {
@@ -152,39 +173,38 @@ const StartInvestingWizard = () => {
     });
   }, []);
 
-  const submitInvestmentPreferences = async () => {
-    console.log('Submitting preferences for prediction:', preferences);
+  const submitInvestmentPreferences = useCallback(async (event) => {
+    if (event) {
+      event.preventDefault();
+    }
+
+    const validationResult = validatePreferences(preferences);
+    if (!validationResult.isValid) {
+      setError(validationResult.error);
+      return;
+    }
+
     setLoading(true);
     setError(null);
-    
-    try {
-      // Validate preferences before submission
-      validatePreferences(preferences);
 
-      // Move to results step first to show loading state
-      setCurrentStep(6);
-      
-      try {
-        const result = await getInvestmentPredictions(preferences);
-        console.log('Received predictions:', result);
-        // Add original preferences to the predictions object
-        setPredictions({
-          ...result,
-          originalPreferences: { ...preferences }
-        });
-      } catch (predictionError) {
-        console.error('Investment prediction error:', predictionError);
-        setError(predictionError.message || 'Failed to generate prediction. Please try again.');
-      }
-    } catch (validationError) {
-      console.error('Validation error:', validationError);
-      setError(validationError.message);
+    try {
+      const result = await getInvestmentPredictions(preferences);
+      setPredictions(result.predictions);
+      setCurrentStep(currentStep + 1);
+    } catch (error) {
+      console.error('Error submitting preferences:', error);
+      setError(error.message || 'Failed to get investment predictions. Please try again.');
     } finally {
       setLoading(false);
     }
-  };
+  }, [preferences, currentStep]);
 
   const handleNext = useCallback(() => {
+    // Don't allow proceeding to next step if we're loading or there's an error
+    if (loading || error) {
+      return;
+    }
+    
     console.log('Handling next step. Current step:', currentStep);
     console.log('Current preferences state:', preferences);
     
@@ -211,49 +231,43 @@ const StartInvestingWizard = () => {
         }
         break;
       case 4:
-        if (!preferences.spendingHabits) {
+        if (!preferences.spendingHabits || !preferences.liquidityNeeds) {
           canProceed = false;
-          errorMessage = 'Please complete spending habits';
+          errorMessage = 'Please complete spending habits and liquidity needs';
         }
         break;
-      case 5:
-        // Submit to Grok
-        submitInvestmentPreferences();
-        return;
       default:
         break;
     }
 
     if (!canProceed) {
-      console.log('Cannot proceed:', errorMessage);
       setError(errorMessage);
       return;
     }
 
-    console.log('Moving to next step:', currentStep + 1);
     setError(null);
     setCurrentStep(prev => prev + 1);
-  }, [currentStep, preferences, submitInvestmentPreferences]);
+  }, [currentStep, preferences, loading, error]);
 
   const handleBack = useCallback(() => {
-    if (currentStep > 1) {
-      console.log('Moving back from step:', currentStep, 'to:', currentStep - 1);
-      setError(null);
-      setCurrentStep(prev => prev - 1);
-    }
-  }, [currentStep]);
+    setError(null);
+    setCurrentStep(prev => Math.max(1, prev - 1));
+  }, []);
 
   const renderStep = () => {
-    console.log('Rendering step:', currentStep);
-    
+    if (loading) {
+      return <LoadingScreen />;
+    }
+
     const commonProps = {
       data: preferences,
       updateData,
       nextStep: handleNext,
-      prevStep: handleBack
+      prevStep: handleBack,
+      submitForm: submitInvestmentPreferences,
+      loading,
+      error
     };
-
-    console.log('Passing props to step:', commonProps);
 
     switch (currentStep) {
       case 1:
@@ -279,7 +293,13 @@ const StartInvestingWizard = () => {
               <div className="error-message">
                 <h3>Oops! Something went wrong</h3>
                 <p>{error}</p>
-                <button className="retry-button" onClick={submitInvestmentPreferences}>
+                <button 
+                  className="retry-button" 
+                  onClick={() => {
+                    setError(null);
+                    submitInvestmentPreferences();
+                  }}
+                >
                   Try Again
                 </button>
               </div>
@@ -287,15 +307,6 @@ const StartInvestingWizard = () => {
             {!loading && !error && predictions && (
               <InvestmentPredictions
                 predictions={predictions}
-                monthlyAmount={
-                  preferences.depositFrequency === 'monthly'
-                    ? Number(preferences.depositAmount)
-                    : preferences.depositFrequency === 'weekly'
-                      ? Number(preferences.depositAmount) * 4.33
-                      : preferences.depositFrequency === 'yearly'
-                        ? Number(preferences.depositAmount) / 12
-                        : Number(preferences.depositAmount)
-                }
                 preferences={preferences}
               />
             )}
@@ -309,18 +320,16 @@ const StartInvestingWizard = () => {
   return (
     <ErrorBoundary>
       <div className="wizard-container">
-        {error && (
-          <div className="error-banner">
-            {error}
-          </div>
-        )}
         <div className="progress-bar">
           <div 
             className="progress-fill"
             style={{ width: `${(currentStep / 6) * 100}%` }}
           ></div>
         </div>
-        {renderStep()}
+        <ErrorMessage message={error} />
+        <div className="wizard-content">
+          {renderStep()}
+        </div>
       </div>
     </ErrorBoundary>
   );

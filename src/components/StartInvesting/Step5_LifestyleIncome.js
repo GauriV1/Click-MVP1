@@ -6,14 +6,16 @@ const Step5_LifestyleIncome = ({
   data = {},
   updateData = () => {},
   nextStep = () => {},
-  prevStep = () => {}
+  prevStep = () => {},
+  submitForm = () => {}
 }) => {
   const [localData, setLocalData] = useState({
     employmentStatus: data.employmentStatus || '',
     monthlySalary: data.monthlySalary || '',
     primaryExpenses: data.primaryExpenses || [],
     emergencyNeeds: data.emergencyNeeds || '',
-    savingsRate: data.savingsRate || ''
+    savingsRate: data.savingsRate || '',
+    age: data.age || ''
   });
 
   const [errors, setErrors] = useState({});
@@ -27,9 +29,15 @@ const Step5_LifestyleIncome = ({
   ];
 
   const handleChange = (field, value) => {
+    const updates = { [field]: value };
     setLocalData(prev => ({
       ...prev,
-      [field]: value
+      ...updates
+    }));
+    updateData(updates);
+    setErrors(prev => ({
+      ...prev,
+      [field]: ''
     }));
   };
 
@@ -44,20 +52,16 @@ const Step5_LifestyleIncome = ({
       ...prev,
       primaryExpenses: updatedExpenses
     }));
+    updateData({ primaryExpenses: updatedExpenses });
   };
 
   const handleEmploymentStatusChange = (e) => {
-    const type = e.target.value;
-    setLocalData(prev => ({ ...prev, employmentStatus: type }));
-    updateData({ employmentStatus: type });
-    setErrors(prev => ({ ...prev, employmentStatus: '' }));
+    handleChange('employmentStatus', e.target.value);
   };
 
-  const handleEmergencyNeedsChange = (value) => {
-    const numericValue = value.replace(/[^0-9]/g, '');
-    setLocalData(prev => ({ ...prev, emergencyNeeds: numericValue }));
-    updateData({ emergencyNeeds: numericValue });
-    setErrors(prev => ({ ...prev, emergencyNeeds: '' }));
+  const handleEmergencyNeedsChange = (e) => {
+    const numericValue = e.target.value.replace(/[^0-9]/g, '');
+    handleChange('emergencyNeeds', numericValue);
   };
 
   const validateForm = () => {
@@ -73,6 +77,16 @@ const Step5_LifestyleIncome = ({
       newErrors.monthlySalary = 'Monthly salary must be positive';
     }
 
+    // Validate age
+    if (!localData.age) {
+      newErrors.age = 'Please enter your age';
+    } else {
+      const age = Number(localData.age);
+      if (isNaN(age) || age < 18 || age > 120) {
+        newErrors.age = 'Please enter a valid age between 18 and 120';
+      }
+    }
+
     // Validate emergency fund amount if provided
     if (localData.emergencyNeeds) {
       if (isNaN(localData.emergencyNeeds) || Number(localData.emergencyNeeds) < 0) {
@@ -86,10 +100,58 @@ const Step5_LifestyleIncome = ({
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (validateForm()) {
-      updateData(localData);
-      nextStep();
+    const isValid = validateForm();
+    
+    if (isValid) {
+      try {
+        // Prepare final data without any custom thresholds or calculations
+        const finalData = {
+          employmentStatus: localData.employmentStatus,
+          monthlySalary: localData.monthlySalary,
+          primaryExpenses: localData.primaryExpenses,
+          emergencyNeeds: localData.emergencyNeeds,
+          savingsRate: localData.savingsRate,
+          age: localData.age
+        };
+
+        // Update parent component with final data
+        updateData(finalData);
+        
+        // Call the parent's submit function
+        submitForm();
+      } catch (error) {
+        console.error('Error processing form data:', error);
+        setErrors(prev => ({
+          ...prev,
+          submit: error.message || 'Failed to process form data. Please try again.'
+        }));
+      }
+    } else {
+      // Scroll to the first error
+      const firstErrorField = Object.keys(errors)[0];
+      const errorElement = document.getElementById(firstErrorField);
+      if (errorElement) {
+        errorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
     }
+  };
+
+  const calculateMonthlyExpenses = (expenses, monthlySalary) => {
+    // Estimate monthly expenses based on selected categories
+    const expenseRatios = {
+      'Rent/Mortgage': 0.3,
+      'Groceries': 0.15,
+      'Utilities': 0.1,
+      'Transportation': 0.15,
+      'Healthcare': 0.1,
+      'Entertainment': 0.1,
+      'Education': 0.15,
+      'Insurance': 0.05
+    };
+
+    return expenses.reduce((total, expense) => {
+      return total + (monthlySalary * (expenseRatios[expense] || 0));
+    }, 0).toFixed(2);
   };
 
   const expenseCategories = [
@@ -112,6 +174,29 @@ const Step5_LifestyleIncome = ({
       </p>
       
       <form onSubmit={handleSubmit} className="lifestyle-form">
+        {errors.submit && (
+          <div className="error-message submit-error">
+            {errors.submit}
+          </div>
+        )}
+        
+        {/* Age Input */}
+        <div className="form-group">
+          <label htmlFor="age">Your Age</label>
+          <input
+            type="number"
+            id="age"
+            value={localData.age}
+            onChange={(e) => handleChange('age', e.target.value)}
+            placeholder="Enter your age"
+            min="18"
+            max="120"
+            className={errors.age ? 'error' : ''}
+            required
+          />
+          {errors.age && <div className="error-message">{errors.age}</div>}
+        </div>
+
         {/* Employment Status */}
         <div className="form-group">
           <label htmlFor="employmentStatus">Employment Status</label>
@@ -137,10 +222,7 @@ const Step5_LifestyleIncome = ({
             type="number"
             id="monthlySalary"
             value={localData.monthlySalary}
-            onChange={(e) => {
-              handleChange('monthlySalary', e.target.value);
-              updateData({ monthlySalary: e.target.value });
-            }}
+            onChange={(e) => handleChange('monthlySalary', e.target.value)}
             placeholder="Enter your monthly salary"
             min="0"
             className={errors.monthlySalary ? 'error' : ''}
@@ -156,7 +238,7 @@ const Step5_LifestyleIncome = ({
             id="emergencyNeeds"
             type="text"
             value={localData.emergencyNeeds}
-            onChange={(e) => handleEmergencyNeedsChange(e.target.value)}
+            onChange={handleEmergencyNeedsChange}
             placeholder="Enter amount"
             className={errors.emergencyNeeds ? 'error' : ''}
           />
@@ -217,7 +299,8 @@ Step5_LifestyleIncome.propTypes = {
   data: PropTypes.object,
   updateData: PropTypes.func,
   nextStep: PropTypes.func,
-  prevStep: PropTypes.func
+  prevStep: PropTypes.func,
+  submitForm: PropTypes.func
 };
 
 export default Step5_LifestyleIncome; 

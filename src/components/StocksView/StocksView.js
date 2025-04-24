@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getMultipleStockData, getAllTickers } from '../../services/googleFinanceService';
+import { getMultipleStockData, getAllTickers } from '../../services/finnhubService';
 import './StocksView.css';
 
 const StocksView = () => {

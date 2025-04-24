@@ -39,8 +39,7 @@ const TICKERS = {
   bonds: [
     'BND', 'AGG', 'TLT', 'IEF', 'SHY',
     'MUB', 'LQD', 'HYG', 'BWX', 'TIP',
-    'GOVT', 'BIL', 'SHV', 'SPTL', 'SPTS',
-    'SPTL', 'SPTS', 'SPTL', 'SPTS', 'SPTL'
+    'GOVT', 'BIL', 'SHV', 'SPTL', 'SPTS'
   ]
 };
 
@@ -62,6 +61,7 @@ export const getStockData = async (symbol) => {
       throw new Error('Rate limit exceeded. Please try again later.');
     }
 
+    console.log(`Fetching data for ${symbol} from Finnhub...`);
     const response = await axios.get(`${FINNHUB_BASE_URL}/quote`, {
       params: {
         symbol: symbol,
@@ -76,9 +76,14 @@ export const getStockData = async (symbol) => {
       timestamp: Date.now()
     });
 
+    console.log(`Successfully fetched data for ${symbol}:`, processedData);
     return processedData;
   } catch (error) {
     console.error(`Error fetching data for ${symbol}:`, error);
+    if (error.response) {
+      console.error('Response data:', error.response.data);
+      console.error('Response status:', error.response.status);
+    }
     throw error;
   }
 };
@@ -89,6 +94,7 @@ export const getStockData = async (symbol) => {
  * @returns {Promise<Object[]>} Array of stock data
  */
 export const getMultipleStockData = async (symbols) => {
+  console.log('Fetching data for multiple symbols:', symbols);
   const results = [];
   for (const symbol of symbols) {
     try {
@@ -96,7 +102,15 @@ export const getMultipleStockData = async (symbols) => {
       results.push({ ...data, symbol });
     } catch (error) {
       console.error(`Failed to fetch ${symbol}:`, error);
-      results.push({ symbol, error: error.message });
+      results.push({ 
+        symbol, 
+        error: error.message,
+        price: null,
+        change: null,
+        changePercent: null,
+        volume: null,
+        timestamp: Date.now()
+      });
     }
   }
   return results;
@@ -115,16 +129,20 @@ export const getAllTickers = () => TICKERS;
  * @returns {Object} Processed stock data
  */
 const processStockData = (rawData, symbol) => {
-  if (!rawData || !rawData.c) {
+  if (!rawData || typeof rawData.c === 'undefined') {
     throw new Error('Invalid data received from Finnhub');
   }
 
   return {
     symbol: symbol,
-    price: rawData.c,
-    change: rawData.d,
-    changePercent: rawData.dp,
-    volume: rawData.v,
+    price: rawData.c || null,
+    change: rawData.d || null,
+    changePercent: rawData.dp || null,
+    volume: rawData.v || null,
+    high: rawData.h || null,
+    low: rawData.l || null,
+    open: rawData.o || null,
+    previousClose: rawData.pc || null,
     timestamp: Date.now()
   };
 };
@@ -154,29 +172,47 @@ const checkRateLimit = () => {
  * @param {Function} callback - Callback function for updates
  */
 export const startRealTimeUpdates = (symbol, callback) => {
-  // Finnhub provides WebSocket API
+  console.log(`Starting real-time updates for ${symbol}`);
   const socket = new WebSocket(`wss://ws.finnhub.io?token=${FINNHUB_API_KEY}`);
 
   socket.onopen = () => {
+    console.log(`WebSocket connected for ${symbol}`);
     socket.send(JSON.stringify({ type: 'subscribe', symbol: symbol }));
   };
 
+  socket.onerror = (error) => {
+    console.error(`WebSocket error for ${symbol}:`, error);
+  };
+
+  socket.onclose = () => {
+    console.log(`WebSocket closed for ${symbol}`);
+  };
+
   socket.onmessage = (event) => {
-    const data = JSON.parse(event.data);
-    if (data.type === 'trade') {
-      const processedData = {
-        symbol: symbol,
-        price: data.data[0].p,
-        change: data.data[0].p - stockCache.get(symbol)?.data?.price || 0,
-        changePercent: ((data.data[0].p - (stockCache.get(symbol)?.data?.price || 0)) / (stockCache.get(symbol)?.data?.price || 1)) * 100,
-        volume: data.data[0].v,
-        timestamp: Date.now()
-      };
-      callback(processedData);
+    try {
+      const data = JSON.parse(event.data);
+      if (data.type === 'trade') {
+        const lastPrice = stockCache.get(symbol)?.data?.price;
+        const currentPrice = data.data[0].p;
+        
+        const processedData = {
+          symbol: symbol,
+          price: currentPrice,
+          change: currentPrice - (lastPrice || currentPrice),
+          changePercent: lastPrice ? ((currentPrice - lastPrice) / lastPrice) * 100 : 0,
+          volume: data.data[0].v,
+          timestamp: Date.now()
+        };
+        
+        callback(processedData);
+      }
+    } catch (error) {
+      console.error(`Error processing WebSocket message for ${symbol}:`, error);
     }
   };
 
   return () => {
+    console.log(`Cleaning up WebSocket for ${symbol}`);
     socket.close();
   };
 };
@@ -186,6 +222,5 @@ export const startRealTimeUpdates = (symbol, callback) => {
  * @param {string} symbol - Stock symbol
  */
 export const stopRealTimeUpdates = (symbol) => {
-  // The cleanup is handled by the WebSocket close in startRealTimeUpdates
   console.log(`Stopping real-time updates for ${symbol}`);
 }; 

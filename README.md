@@ -78,14 +78,20 @@ npm start
 
 The following environment variables are required:
 
-- `REACT_APP_GROK_API_KEY`: API key for Grok AI services
-- `REACT_APP_FINNHUB_API_KEY`: API key for Finnhub financial data
+## API Keys
+- `GROK_API_KEY`: API key for Grok AI services (Get from x.ai)
+- `FINHUB_API_KEY`: API key for Finnhub financial data (Get from finnhub.io)
 
-You can obtain these API keys from:
-- Grok API key: [x.ai](https://x.ai)
-- Finnhub API key: [finnhub.io](https://finnhub.io)
+## API URLs
+- `GROK_API_URL`: Base URL for Grok API (defaults to https://api.x.ai/v1)
 
-⚠️ **IMPORTANT**: Never commit your `.env` file or expose your API keys. The `.env` file is already added to `.gitignore`.
+## Feature Flags
+- `REACT_APP_USE_FALLBACK_DATA`: Whether to use fallback data when API calls fail (true/false)
+
+To set up your environment:
+1. Copy `.env.template` to `.env`
+2. Fill in your API keys and other configuration
+3. Never commit `.env` to version control
 
 ## Features
 

@@ -1,14 +1,18 @@
+import axios from 'axios';
+
 const { STOCK_LIST } = require('../components/MarketViews/data/stockData');
 const { ETF_LIST } = require('../components/MarketViews/data/etfData');
 const { BOND_LIST } = require('../components/MarketViews/data/bondData');
 const { setCachedData, getCachedData } = require('../components/MarketViews/utils/marketCache');
 
-const API_TOKEN = process.env.REACT_APP_FINNHUB_API_KEY;
+// API Configuration
+const API_TOKEN = process.env.FINHUB_API_KEY;
 const API_BASE_URL = 'https://finnhub.io/api/v1';
 
+// Validate API key
 if (!API_TOKEN) {
-  console.error('Missing Finnhub API key. Please set REACT_APP_FINNHUB_API_KEY environment variable.');
-  throw new Error('API token not found. Please set REACT_APP_FINNHUB_API_KEY in your environment.');
+  console.error('Missing Finnhub API key. Please set FINHUB_API_KEY environment variable.');
+  throw new Error('API token not found');
 }
 
 // Add warning if using default token
