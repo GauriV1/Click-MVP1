@@ -191,34 +191,63 @@ const validatePredictionResponse = (response) => {
   return true;
 };
 
-// Improved JSON parsing with fence extraction and repair
+// Improved JSON parsing with better extraction and repair
 const extractAndRepairJson = (text) => {
-  console.log('Attempting to extract and repair JSON from:', text);
+  console.log('Raw text to parse:', text);
   
-  // Try to extract JSON block
-  const match = text.match(/\{[\s\S]*\}/);
-  if (!match) {
-    console.error('No JSON object found in text');
-    throw new Error('No JSON object found in response');
-  }
-
-  let jsonStr = match[0];
-  console.log('Extracted JSON string:', jsonStr);
-
-  // Remove any trailing commas before closing brace
-  jsonStr = jsonStr.replace(/,\s*\}$/, '}');
-  
-  // Add missing closing brace if needed
-  if (!jsonStr.trim().endsWith('}')) {
-    console.log('Adding missing closing brace');
-    jsonStr += '}';
-  }
-
   try {
-    return JSON.parse(jsonStr);
+    // First try direct parsing in case it's already valid JSON
+    try {
+      return JSON.parse(text);
+    } catch (e) {
+      console.log('Direct parsing failed, attempting repair...');
+    }
+
+    // Try to extract JSON block with more robust regex
+    const jsonRegex = /\{(?:[^{}]|(?:\{[^{}]*\}))*\}/g;
+    const matches = text.match(jsonRegex);
+    
+    if (!matches) {
+      console.error('No JSON object found in text');
+      throw new Error('No JSON object found in response');
+    }
+
+    // Get the largest match as it's likely the complete JSON
+    let jsonStr = matches.reduce((a, b) => a.length > b.length ? a : b);
+    console.log('Extracted potential JSON:', jsonStr);
+
+    // Common repairs
+    jsonStr = jsonStr
+      // Fix unquoted property names
+      .replace(/([{,]\s*)(\w+)(\s*:)/g, '$1"$2"$3')
+      // Remove trailing commas before closing braces
+      .replace(/,(\s*[}\]])/g, '$1')
+      // Fix single quotes to double quotes
+      .replace(/'/g, '"')
+      // Ensure numbers are valid JSON
+      .replace(/(\d+)%/g, '$1')
+      // Fix common formatting issues
+      .replace(/\n/g, ' ')
+      .replace(/\r/g, '')
+      .replace(/\t/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    // Ensure all properties and string values are properly quoted
+    jsonStr = jsonStr.replace(/(['"])?([a-zA-Z0-9_]+)(['"])?:/g, '"$2":');
+
+    // Try to parse the repaired JSON
+    try {
+      const parsed = JSON.parse(jsonStr);
+      console.log('Successfully parsed repaired JSON');
+      return parsed;
+    } catch (parseError) {
+      console.error('Failed to parse repaired JSON:', parseError);
+      throw new Error(`Failed to parse JSON: ${parseError.message}`);
+    }
   } catch (error) {
-    console.error('Failed to parse extracted JSON:', error);
-    throw new Error(`Failed to parse JSON: ${error.message}`);
+    console.error('Error in extractAndRepairJson:', error);
+    throw error;
   }
 };
 
@@ -258,7 +287,7 @@ async function makeApiRequest(payload) {
       const requestPayload = {
         model: config.MODEL,
         temperature: 0.1,
-        max_tokens: 1000, // Reduced from 2000 to avoid truncation
+        max_tokens: 1000,
         messages: [
           {
             role: "system",
@@ -266,79 +295,55 @@ async function makeApiRequest(payload) {
           },
           {
             role: "user",
-            content: "Generate investment plan JSON for this profile:\n" + JSON.stringify(payload, null, 2)
+            content: "Return ONLY the JSON object with no additional text. Profile:\n" + JSON.stringify(payload, null, 2)
           }
         ]
       };
 
-      console.log('Request payload:', JSON.stringify(requestPayload, null, 2));
-
-      // Log the API key being used (masked for security)
-      const maskedKey = config.API_KEY ? 
-        `${config.API_KEY.substring(0, 4)}...${config.API_KEY.substring(config.API_KEY.length - 4)}` : 
-        'undefined';
-      console.log(`Using API key: ${maskedKey}`);
-
       const response = await grokClient.post('/chat/completions', requestPayload);
       
-      // Log full response details
-      console.log('API Response:', {
-        status: response.status,
-        statusText: response.statusText,
-        headers: response.headers,
-        data: response.data
+      if (!response.data?.choices?.[0]?.message?.content) {
+        throw new Error('Invalid API response structure');
+      }
+
+      const content = response.data.choices[0].message.content.trim();
+      console.log('Raw API response content:', content);
+
+      // Parse and validate the response
+      const parsedResult = extractAndRepairJson(content);
+      
+      // Ensure all required fields are present with correct types
+      const requiredFields = {
+        projectedGrowth: ['1yr', '5yr', '10yr'],
+        expectedReturn: ['min', 'max'],
+        riskMetrics: ['volatilityScore', 'originalProfile', 'adjustedProfile', 'ageConsideration'],
+        suggestions: Array.isArray,
+        warnings: Array.isArray,
+        notes: 'string',
+        reasoning: 'string',
+        growthModel: ['description', 'assumptions', 'factors', 'methodology']
+      };
+
+      // Validate all required fields and their types
+      Object.entries(requiredFields).forEach(([field, validation]) => {
+        if (!parsedResult[field]) {
+          throw new Error(`Missing required field: ${field}`);
+        }
+
+        if (Array.isArray(validation)) {
+          validation.forEach(subfield => {
+            if (!(subfield in parsedResult[field])) {
+              throw new Error(`Missing required subfield: ${field}.${subfield}`);
+            }
+          });
+        } else if (typeof validation === 'function') {
+          if (!validation(parsedResult[field])) {
+            throw new Error(`Invalid type for field: ${field}`);
+          }
+        } else if (typeof parsedResult[field] !== validation) {
+          throw new Error(`Invalid type for field: ${field}`);
+        }
       });
-
-      // Log the raw API response for debugging
-      console.debug("Grok raw response:", JSON.stringify(response.data, null, 2));
-
-      // Check response status
-      if (response.status !== 200) {
-        throw new Error(`API returned status ${response.status}: ${response.statusText}`);
-      }
-
-      // Validate response structure
-      if (!response.data) {
-        console.error('No data in response');
-        throw new Error('Empty response from API');
-      }
-
-      if (!response.data.choices || !Array.isArray(response.data.choices) || response.data.choices.length === 0) {
-        console.error('Invalid response structure:', response.data);
-        throw new Error('Invalid API response structure: missing choices array');
-      }
-
-      const choice = response.data.choices[0];
-      if (!choice.message) {
-        console.error('Invalid message structure:', choice);
-        throw new Error('Invalid message structure in API response: missing message');
-      }
-
-      // Check both content and reasoning_content fields
-      const { content = "", reasoning_content = "" } = choice.message;
-      const jsonText = content.trim() || reasoning_content.trim();
-      
-      if (!jsonText) {
-        throw new Error('Empty content in API response message');
-      }
-
-      // Use the new extraction and repair function
-      const parsedResult = extractAndRepairJson(jsonText);
-
-      // Validate the parsed result
-      if (!parsedResult || typeof parsedResult !== 'object') {
-        throw new Error('Invalid response format: not a valid object');
-      }
-
-      // Now validate that we have the fields we expect
-      const requiredFields = ['projectedGrowth', 'expectedReturn', 'riskMetrics', 'suggestions'];
-      const missingFields = requiredFields.filter(field => !(field in parsedResult));
-      
-      if (missingFields.length > 0) {
-        console.error('Missing required fields:', missingFields);
-        console.error('Available fields:', Object.keys(parsedResult));
-        throw new Error(`Missing required fields in response: ${missingFields.join(', ')}`);
-      }
 
       return parsedResult;
 
