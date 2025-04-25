@@ -131,36 +131,58 @@ Be concise. Return nothing else. Make sure to use language that an everyday huma
 
 // Enhanced validation with specific checks
 const validateUserPreferences = (preferences) => {
-  const requiredFields = {
-    riskProfile: ['conservative', 'moderate', 'aggressive'],
-    depositFrequency: ['weekly', 'monthly', 'yearly'],
-    monthlySalary: (val) => !isNaN(val) && val > 0,
-    depositAmount: (val) => !isNaN(val) && val > 0,
-    age: (val) => !isNaN(val) && val >= 18 && val <= 120,
-    employmentStatus: ['full-time', 'part-time', 'self-employed', 'student'],
-    liquidityNeeds: ['high', 'medium', 'low'],
-    spendingHabits: ['consistent', 'variable']
-  };
-
   const errors = [];
-  Object.entries(requiredFields).forEach(([field, validation]) => {
-    const value = preferences[field];
-    if (value === undefined || value === null || value === '') {
-      errors.push(`Missing required field: ${field}`);
-    } else if (Array.isArray(validation)) {
-      if (!validation.includes(value)) {
-        errors.push(`Invalid value for ${field}: ${value}. Must be one of: ${validation.join(', ')}`);
-      }
-    } else if (typeof validation === 'function') {
-      if (!validation(value)) {
-        errors.push(`Invalid value for ${field}: ${value}`);
-      }
+  
+  if (!preferences) {
+    return { isValid: false, errors: ['Preferences object is required'] };
+  }
+
+  // Required fields
+  const requiredFields = ['age', 'monthlySalary', 'depositAmount', 'riskProfile', 'depositFrequency'];
+  requiredFields.forEach(field => {
+    if (!preferences[field]) {
+      errors.push(`${field} is required`);
     }
   });
 
-  if (errors.length > 0) {
-    throw new ValidationError('Invalid preferences', errors);
+  // Age validation
+  if (preferences.age) {
+    const age = Number(preferences.age);
+    if (isNaN(age) || age < 18 || age > 120) {
+      errors.push('Age must be between 18 and 120');
+    }
   }
+
+  // Monthly salary validation
+  if (preferences.monthlySalary) {
+    const salary = Number(preferences.monthlySalary);
+    if (isNaN(salary) || salary <= 0) {
+      errors.push('Monthly salary must be a positive number');
+    }
+  }
+
+  // Deposit amount validation
+  if (preferences.depositAmount) {
+    const amount = Number(preferences.depositAmount);
+    if (isNaN(amount) || amount < 0) {
+      errors.push('Deposit amount must be a non-negative number');
+    }
+  }
+
+  // Risk profile validation
+  if (preferences.riskProfile && !['conservative', 'moderate', 'aggressive'].includes(preferences.riskProfile)) {
+    errors.push('Risk profile must be conservative, moderate, or aggressive');
+  }
+
+  // Deposit frequency validation
+  if (preferences.depositFrequency && !['weekly', 'monthly', 'yearly', 'adhoc'].includes(preferences.depositFrequency)) {
+    errors.push('Deposit frequency must be weekly, monthly, yearly, or adhoc');
+  }
+
+  return {
+    isValid: errors.length === 0,
+    errors
+  };
 };
 
 // Improved JSON parsing with better extraction and repair
