@@ -1,10 +1,37 @@
 import axios from 'axios';
 
-// API Configuration
+// Custom error classes for better error handling
+class GrokAPIError extends Error {
+  constructor(message, code, details = {}) {
+    super(message);
+    this.name = 'GrokAPIError';
+    this.code = code;
+    this.details = details;
+  }
+}
+
+class ValidationError extends Error {
+  constructor(message, fields = []) {
+    super(message);
+    this.name = 'ValidationError';
+    this.fields = fields;
+  }
+}
+
+// Request ID generator
+const generateRequestId = () => {
+  return `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+};
+
+// Enhanced API configuration
 const config = {
   BASE_URL: process.env.REACT_APP_GROK_API_URL || 'https://api.x.ai/v1',
   API_KEY: process.env.REACT_APP_GROK_API_KEY,
-  MODEL: 'grok-3-mini-fast-beta'
+  MODEL: 'grok-v1',
+  VERSION: '1.0',
+  MAX_RETRIES: 3,
+  RETRY_DELAY: 2000,
+  TIMEOUT: 30000
 };
 
 // Create an axios instance with default configuration
@@ -32,9 +59,6 @@ grokClient.interceptors.request.use((config) => {
 }, (error) => {
   return Promise.reject(error);
 });
-
-const MAX_RETRIES = 3;
-const RETRY_DELAY = 2000;
 
 // Enhanced system prompt to better explain the context and requirements
 const systemPrompt = `You are Click's Investment Prediction AI. Your role is to analyze user profiles and generate detailed investment projections.
@@ -86,124 +110,38 @@ Conservative: 45% Core ETFs, 25% Bonds, 15% International, 15% Dividend
 Moderate: 55% Core ETFs, 20% Bonds, 15% International, 10% Tech
 Aggressive: 65% Core ETFs, 15% Tech, 10% International, 10% Growth`;
 
-// Validate user preferences before sending to API
+// Enhanced validation with specific checks
 const validateUserPreferences = (preferences) => {
-  const requiredFields = [
-    'monthlySalary',
-    'employmentStatus',
-    'depositAmount',
-    'depositFrequency',
-    'riskProfile',
-    'spendingHabits',
-    'liquidityNeeds'
-  ];
+  const requiredFields = {
+    riskProfile: ['conservative', 'moderate', 'aggressive'],
+    depositFrequency: ['weekly', 'monthly', 'yearly'],
+    monthlySalary: (val) => !isNaN(val) && val > 0,
+    depositAmount: (val) => !isNaN(val) && val > 0,
+    age: (val) => !isNaN(val) && val >= 18 && val <= 120,
+    employmentStatus: ['full-time', 'part-time', 'self-employed', 'student'],
+    liquidityNeeds: ['high', 'medium', 'low'],
+    spendingHabits: ['consistent', 'variable']
+  };
 
-  // Check for missing required fields
-  const missingFields = requiredFields.filter(field => !preferences[field]);
-  if (missingFields.length > 0) {
-    throw new Error(`Missing required fields: ${missingFields.join(', ')}`);
+  const errors = [];
+  Object.entries(requiredFields).forEach(([field, validation]) => {
+    const value = preferences[field];
+    if (value === undefined || value === null || value === '') {
+      errors.push(`Missing required field: ${field}`);
+    } else if (Array.isArray(validation)) {
+      if (!validation.includes(value)) {
+        errors.push(`Invalid value for ${field}: ${value}. Must be one of: ${validation.join(', ')}`);
+      }
+    } else if (typeof validation === 'function') {
+      if (!validation(value)) {
+        errors.push(`Invalid value for ${field}: ${value}`);
+      }
     }
+  });
 
-    // Validate numeric fields
-  if (isNaN(preferences.monthlySalary) || preferences.monthlySalary <= 0) {
-    throw new Error('Monthly salary must be a positive number');
+  if (errors.length > 0) {
+    throw new ValidationError('Invalid preferences', errors);
   }
-
-  if (isNaN(preferences.depositAmount) || preferences.depositAmount <= 0) {
-    throw new Error('Deposit amount must be a positive number');
-  }
-
-  // Validate emergency fund amount if provided
-  if (preferences.emergencyNeeds) {
-    if (isNaN(preferences.emergencyNeeds) || preferences.emergencyNeeds < 0) {
-      throw new Error('Emergency fund amount must be a non-negative number');
-    }
-  }
-
-  // Validate employment status
-  const validEmploymentStatuses = ['student', 'full-time', 'part-time', 'self-employed'];
-  if (!validEmploymentStatuses.includes(preferences.employmentStatus)) {
-    throw new Error('Invalid employment status');
-  }
-
-  // Validate deposit frequency
-  const validFrequencies = ['weekly', 'monthly', 'yearly', 'ad hoc'];
-  if (!validFrequencies.includes(preferences.depositFrequency)) {
-    throw new Error('Invalid deposit frequency');
-  }
-
-  // Validate risk profile
-  const validRiskProfiles = ['conservative', 'moderate', 'aggressive'];
-  if (!validRiskProfiles.includes(preferences.riskProfile)) {
-    throw new Error('Invalid risk profile');
-  }
-
-  // Validate spending habits
-  const validSpendingHabits = ['consistent', 'variable'];
-  if (!validSpendingHabits.includes(preferences.spendingHabits)) {
-    throw new Error('Invalid spending habits');
-  }
-
-  // Validate liquidity needs
-  const validLiquidityNeeds = ['high', 'medium', 'low'];
-  if (!validLiquidityNeeds.includes(preferences.liquidityNeeds)) {
-    throw new Error('Invalid liquidity needs');
-  }
-
-  return true;
-};
-
-// Validate API response
-const validatePredictionResponse = (response) => {
-  const requiredFields = [
-    'projectedGrowth', 
-    'expectedReturn', 
-    'riskMetrics', 
-    'suggestions', 
-    'warnings',
-    'notes',
-    'reasoning',
-    'growthModel'
-  ];
-  
-  const missingFields = requiredFields.filter(field => !response[field]);
-  if (missingFields.length > 0) {
-    throw new Error(`Invalid API response: missing ${missingFields.join(', ')}`);
-  }
-
-  // Basic structure validation
-  const growth = response.projectedGrowth;
-  if (!growth['1yr'] || !growth['5yr'] || !growth['10yr']) {
-    throw new Error('Invalid projected growth format');
-  }
-
-  // Validate return expectations structure
-  const returns = response.expectedReturn;
-  if (typeof returns.min !== 'number' || typeof returns.max !== 'number') {
-    throw new Error('Invalid expected return format');
-  }
-
-  // Validate risk metrics structure
-  const riskMetrics = response.riskMetrics;
-  if (typeof riskMetrics.volatilityScore !== 'number' ||
-      !riskMetrics.originalProfile ||
-      !riskMetrics.adjustedProfile) {
-    throw new Error('Invalid risk metrics format');
-  }
-
-  // Validate suggestions structure
-  if (!Array.isArray(response.suggestions)) {
-    throw new Error('Invalid suggestions format');
-  }
-
-  // Validate growth model structure
-  const growthModel = response.growthModel;
-  if (!growthModel.description || !Array.isArray(growthModel.assumptions) || 
-      !Array.isArray(growthModel.factors) || !growthModel.methodology) {
-    throw new Error('Invalid growth model format');
-  }
-
-  return true;
 };
 
 // Improved JSON parsing with better extraction and repair
@@ -292,26 +230,22 @@ const transformResponse = (response) => {
 
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-// Update makeApiRequest to properly structure the user message
-async function makeApiRequest(payload) {
+// Enhanced API request with better error handling
+async function makeApiRequest(payload, requestId) {
   let attempt = 0;
+  const startTime = Date.now();
   
-  while (attempt < MAX_RETRIES) {
+  while (attempt < config.MAX_RETRIES) {
     try {
-      console.log(`Attempt ${attempt + 1}: Making Grok API request`);
+      console.log(`[${requestId}] Attempt ${attempt + 1}: Making Grok API request`);
       
-      const userMessage = `Generate investment predictions for this user profile. Return ONLY the JSON response matching the specified schema.
-
-Profile Details:
-- Monthly Salary: $${payload.monthlySalary}
-- Employment: ${payload.employmentStatus}
-- Age: ${payload.age || 'Not specified'}
-- Risk Profile: ${payload.riskProfile}
-- Deposit Amount: $${payload.depositAmount}
-- Deposit Frequency: ${payload.depositFrequency}
-- Emergency Fund: $${payload.emergencyNeeds || 0}
-- Liquidity Needs: ${payload.liquidityNeeds}
-- Spending Habits: ${payload.spendingHabits}`;
+      const userMessage = {
+        type: "investment_prediction_request",
+        version: config.VERSION,
+        requestId,
+        timestamp: new Date().toISOString(),
+        preferences: payload
+      };
 
       const requestPayload = {
         model: config.MODEL,
@@ -324,136 +258,115 @@ Profile Details:
           },
           {
             role: "user",
-            content: userMessage
+            content: JSON.stringify(userMessage, null, 2)
           }
         ]
       };
 
-      console.log('Sending request with payload:', userMessage);
+      const response = await grokClient.post('/chat/completions', requestPayload, {
+        timeout: config.TIMEOUT,
+        headers: {
+          'Request-ID': requestId
+        }
+      });
 
-      const response = await grokClient.post('/chat/completions', requestPayload);
-      
       if (!response.data?.choices?.[0]?.message?.content) {
-        throw new Error('Invalid API response structure');
+        throw new GrokAPIError('Invalid API response structure', 'INVALID_RESPONSE');
       }
 
       const content = response.data.choices[0].message.content.trim();
-      console.log('Raw API response content:', content);
+      console.log(`[${requestId}] Raw API response content:`, content);
 
       // Parse and validate the response
       const parsedResult = extractAndRepairJson(content);
       
-      // Additional validation to ensure no empty or invalid values
-      const validateField = (obj, path = '') => {
-        if (!obj) return [`${path} is empty or null`];
-        
-        let errors = [];
-        if (typeof obj === 'object') {
-          Object.entries(obj).forEach(([key, value]) => {
-            const newPath = path ? `${path}.${key}` : key;
-            if (value === null || value === undefined || value === '') {
-              errors.push(`${newPath} is empty or null`);
-            } else if (Array.isArray(value) && value.length === 0) {
-              errors.push(`${newPath} array is empty`);
-            } else if (typeof value === 'object') {
-              errors = errors.concat(validateField(value, newPath));
-            }
-          });
+      // Add metadata to the response
+      return {
+        ...parsedResult,
+        metadata: {
+          requestId,
+          timestamp: new Date().toISOString(),
+          processingTime: Date.now() - startTime,
+          attempt: attempt + 1,
+          isDemo: false
         }
-        return errors;
       };
-
-      const validationErrors = validateField(parsedResult);
-      if (validationErrors.length > 0) {
-        throw new Error(`Validation errors: ${validationErrors.join(', ')}`);
-      }
-
-      // Ensure all required fields are present with correct types
-      const requiredFields = {
-        projectedGrowth: ['1yr', '5yr', '10yr'],
-        expectedReturn: ['min', 'max'],
-        riskMetrics: ['volatilityScore', 'originalProfile', 'adjustedProfile', 'ageConsideration'],
-        suggestions: Array.isArray,
-        warnings: Array.isArray,
-        notes: 'string',
-        reasoning: 'string',
-        growthModel: ['description', 'assumptions', 'factors', 'methodology']
-      };
-
-      // Validate all required fields and their types
-      Object.entries(requiredFields).forEach(([field, validation]) => {
-        if (!parsedResult[field]) {
-          throw new Error(`Missing required field: ${field}`);
-        }
-
-        if (Array.isArray(validation)) {
-          validation.forEach(subfield => {
-            if (!(subfield in parsedResult[field])) {
-              throw new Error(`Missing required subfield: ${field}.${subfield}`);
-            }
-          });
-        } else if (typeof validation === 'function') {
-          if (!validation(parsedResult[field])) {
-            throw new Error(`Invalid type for field: ${field}`);
-          }
-        } else if (typeof parsedResult[field] !== validation) {
-          throw new Error(`Invalid type for field: ${field}`);
-        }
-      });
-
-      return parsedResult;
 
     } catch (error) {
-      console.error(`API request failed (attempt ${attempt + 1}):`, error);
+      console.error(`[${requestId}] API request failed (attempt ${attempt + 1}):`, error);
+      
+      // Enhance error with request context
+      const enhancedError = new GrokAPIError(
+        error.message,
+        error.code || 'UNKNOWN_ERROR',
+        {
+          requestId,
+          attempt: attempt + 1,
+          timestamp: new Date().toISOString(),
+          originalError: error
+        }
+      );
+
       attempt++;
       
-      if (attempt === MAX_RETRIES) {
-        throw new Error(`Failed to get valid response after ${MAX_RETRIES} attempts: ${error.message}`);
+      if (attempt === config.MAX_RETRIES) {
+        throw enhancedError;
       }
       
-      const delay = RETRY_DELAY * Math.pow(2, attempt - 1);
-      console.log(`Retrying in ${delay}ms...`);
+      const delay = config.RETRY_DELAY * Math.pow(2, attempt - 1);
+      console.log(`[${requestId}] Retrying in ${delay}ms...`);
       await sleep(delay);
     }
   }
 }
 
+// Enhanced investment predictions function
 export const getInvestmentPredictions = async (preferences) => {
+  const requestId = generateRequestId();
+  console.log(`[${requestId}] Starting investment prediction request`);
+
   try {
-    // Validate preferences first
+    // Validate preferences
     validateUserPreferences(preferences);
 
-    // Log the preferences being sent
-    console.log('Sending preferences to Grok API:', preferences);
-
-    // Check for API key before making request
-    const apiKey = process.env.REACT_APP_GROK_API_KEY;
-    if (!apiKey) {
-      console.warn('No Grok API key found');
+    // Check for API key
+    if (!config.API_KEY) {
+      console.warn(`[${requestId}] No Grok API key found`);
       if (process.env.REACT_APP_USE_FALLBACK_DATA === 'true') {
-        console.log('Using fallback predictions due to missing API key');
-        return getFallbackPredictions(preferences);
+        console.log(`[${requestId}] Using fallback predictions`);
+        return {
+          ...getFallbackPredictions(preferences),
+          metadata: {
+            requestId,
+            timestamp: new Date().toISOString(),
+            isDemo: true
+          }
+        };
       }
-      throw new Error('Missing REACT_APP_GROK_API_KEY environment variable');
+      throw new GrokAPIError('Missing API key', 'MISSING_API_KEY');
     }
 
     // Make the API request
-    const response = await makeApiRequest({
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: JSON.stringify(preferences) }
-      ]
-    });
+    return await makeApiRequest(preferences, requestId);
 
-    // Validate and transform the response
-    return transformResponse(response);
   } catch (error) {
-    console.error('Error getting investment predictions:', error);
+    console.error(`[${requestId}] Error getting investment predictions:`, error);
     
-    // If fallback data is enabled, use it
     if (process.env.REACT_APP_USE_FALLBACK_DATA === 'true') {
-      console.warn('Using fallback predictions due to error:', error.message);
-      return getFallbackPredictions(preferences);
+      console.warn(`[${requestId}] Using fallback predictions due to error:`, error.message);
+      return {
+        ...getFallbackPredictions(preferences),
+        metadata: {
+          requestId,
+          timestamp: new Date().toISOString(),
+          isDemo: true,
+          error: {
+            message: error.message,
+            code: error.code,
+            details: error.details
+          }
+        }
+      };
     }
     
     throw error;

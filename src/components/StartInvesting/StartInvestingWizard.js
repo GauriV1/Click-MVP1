@@ -74,9 +74,11 @@ const requiredFields = [
 ];
 
 const validatePreferences = (preferences) => {
+  console.log('Validating preferences:', preferences);
+  
   // Check for required fields
   for (const field of requiredFields) {
-    if (!preferences[field] || preferences[field].trim() === '') {
+    if (!preferences[field] || (typeof preferences[field] === 'string' && preferences[field].trim() === '')) {
       return {
         isValid: false,
         error: `Please provide your ${field.replace(/([A-Z])/g, ' $1').toLowerCase()}`
@@ -111,6 +113,23 @@ const validatePreferences = (preferences) => {
     };
   }
 
+  // Validate risk profile
+  if (!['conservative', 'moderate', 'aggressive'].includes(preferences.riskProfile)) {
+    return {
+      isValid: false,
+      error: 'Please select a valid risk profile'
+    };
+  }
+
+  // Validate deposit frequency
+  if (!['weekly', 'monthly', 'yearly'].includes(preferences.depositFrequency)) {
+    return {
+      isValid: false,
+      error: 'Please select a valid deposit frequency'
+    };
+  }
+
+  console.log('Preferences validation passed');
   return {
     isValid: true,
     error: null
@@ -143,6 +162,14 @@ const StartInvestingWizard = () => {
   const [predictions, setPredictions] = useState(null);
   const [preferences, setPreferences] = useState(initialPreferences);
 
+  // Add debug logging state
+  const [debugLog, setDebugLog] = useState({
+    requestAttempts: 0,
+    lastRequest: null,
+    lastResponse: null,
+    validationSteps: []
+  });
+
   // Enhanced logging for debugging
   useEffect(() => {
     console.log('Current Step:', currentStep);
@@ -173,31 +200,89 @@ const StartInvestingWizard = () => {
     });
   }, []);
 
+  // Enhanced error handling
+  const handleError = useCallback((error, context = '') => {
+    console.error(`Error in ${context}:`, error);
+    let userMessage = 'An unexpected error occurred. Please try again.';
+
+    if (error.message.includes('API response structure')) {
+      userMessage = 'We\'re having trouble generating your investment predictions. Please try again in a moment.';
+    } else if (error.message.includes('Missing required field')) {
+      userMessage = 'Some required information is missing. Please check all fields and try again.';
+    } else if (error.message.includes('validation')) {
+      userMessage = 'Please check your investment preferences and try again.';
+    }
+
+    setError(userMessage);
+    setDebugLog(prev => ({
+      ...prev,
+      lastError: {
+        timestamp: new Date().toISOString(),
+        context,
+        error: error.message,
+        stack: error.stack
+      }
+    }));
+  }, []);
+
   const submitInvestmentPreferences = useCallback(async (event) => {
     if (event) {
       event.preventDefault();
     }
 
-    const validationResult = validatePreferences(preferences);
-    if (!validationResult.isValid) {
-      setError(validationResult.error);
-      return;
-    }
-
+    // Reset states
     setLoading(true);
     setError(null);
+    setPredictions(null);
 
     try {
+      // Log the attempt
+      setDebugLog(prev => ({
+        ...prev,
+        requestAttempts: prev.requestAttempts + 1,
+        lastRequest: {
+          timestamp: new Date().toISOString(),
+          preferences: { ...preferences }
+        }
+      }));
+
+      // Validate preferences
+      const validationResult = validatePreferences(preferences);
+      if (!validationResult.isValid) {
+        throw new Error(`Validation error: ${validationResult.error}`);
+      }
+
+      // Add validation success to debug log
+      setDebugLog(prev => ({
+        ...prev,
+        validationSteps: [...prev.validationSteps, {
+          timestamp: new Date().toISOString(),
+          step: 'frontend-validation',
+          status: 'success'
+        }]
+      }));
+
+      // Get predictions
       const result = await getInvestmentPredictions(preferences);
-      setPredictions(result.predictions);
+      
+      // Log successful response
+      setDebugLog(prev => ({
+        ...prev,
+        lastResponse: {
+          timestamp: new Date().toISOString(),
+          result
+        }
+      }));
+
+      // Update state with predictions
+      setPredictions(result);
       setCurrentStep(currentStep + 1);
     } catch (error) {
-      console.error('Error submitting preferences:', error);
-      setError(error.message || 'Failed to get investment predictions. Please try again.');
+      handleError(error, 'submitInvestmentPreferences');
     } finally {
       setLoading(false);
     }
-  }, [preferences, currentStep]);
+  }, [preferences, currentStep, handleError]);
 
   const handleNext = useCallback(() => {
     // Don't allow proceeding to next step if we're loading or there's an error
@@ -330,6 +415,11 @@ const StartInvestingWizard = () => {
         <div className="wizard-content">
           {renderStep()}
         </div>
+        {process.env.NODE_ENV === 'development' && (
+          <div className="debug-panel" style={{ display: 'none' }}>
+            <pre>{JSON.stringify(debugLog, null, 2)}</pre>
+          </div>
+        )}
       </div>
     </ErrorBoundary>
   );
