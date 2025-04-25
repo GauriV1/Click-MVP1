@@ -257,7 +257,7 @@ async function makeApiRequest(payload, requestId) {
   
   while (attempt < API_CONFIG.MAX_RETRIES) {
     try {
-      console.log(`[${requestId}] Making API request (attempt ${attempt + 1})`);
+      console.log(`[${requestId}] Making Grok API request (attempt ${attempt + 1})`);
       
       const requestPayload = {
         model: API_CONFIG.MODEL,
@@ -357,7 +357,7 @@ export async function getInvestmentPredictions(preferences) {
     }
 
     // Make API request
-    console.log(`[${requestId}] Making API request to Groq`);
+    console.log(`[${requestId}] Making API request to Grok`);
     return await makeApiRequest(preferences, requestId);
   } catch (error) {
     console.error(`[${requestId}] Error getting investment predictions:`, error);
