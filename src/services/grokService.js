@@ -131,9 +131,11 @@ Be concise. Return nothing else. Make sure to use language that an everyday huma
 
 // Enhanced validation with specific checks
 const validateUserPreferences = (preferences) => {
+  console.log('Validating preferences:', preferences);
   const errors = [];
   
   if (!preferences) {
+    console.warn('Preferences object is missing');
     return { isValid: false, errors: ['Preferences object is required'] };
   }
 
@@ -141,6 +143,7 @@ const validateUserPreferences = (preferences) => {
   const requiredFields = ['age', 'monthlySalary', 'depositAmount', 'riskProfile', 'depositFrequency'];
   requiredFields.forEach(field => {
     if (!preferences[field]) {
+      console.warn(`Missing required field: ${field}`);
       errors.push(`${field} is required`);
     }
   });
@@ -372,7 +375,10 @@ export async function getInvestmentPredictions(preferences) {
   
   try {
     // Validate preferences
+    console.log(`[${requestId}] Validating preferences...`);
     const validationResult = validateUserPreferences(preferences);
+    console.log(`[${requestId}] Validation result:`, validationResult);
+    
     if (!validationResult.isValid) {
       console.warn(`[${requestId}] Invalid preferences:`, validationResult.errors);
       throw new Error(`Invalid preferences: ${validationResult.errors.join(', ')}`);
@@ -380,7 +386,9 @@ export async function getInvestmentPredictions(preferences) {
 
     // Make API request
     console.log(`[${requestId}] Making API request to Grok`);
-    return await makeApiRequest(preferences, requestId);
+    const response = await makeApiRequest(preferences, requestId);
+    console.log(`[${requestId}] Received API response:`, response);
+    return response;
   } catch (error) {
     console.error(`[${requestId}] Error getting investment predictions:`, error);
     throw error;
