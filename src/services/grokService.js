@@ -36,65 +36,8 @@ grokClient.interceptors.request.use((config) => {
 const MAX_RETRIES = 3;
 const RETRY_DELAY = 2000;
 
-const systemPrompt = `IMPORTANT: If at any point you cannot generate a full JSON, respond with an object like
-{ "error": "could not generate projections", "notes": "reason for failure" }
-rather than empty content.
-
-Click's financial prediction assistant generates personalized investment projections based on user profiles.
-Our AI engine verifies that each plan aligns with the user's income, deposit frequency, and risk tolerance.  
-
-1. Parse and validate the user object:
-   • age (18-120) - Must be a valid age for investment planning
-   • monthlySalary (in $) - This is monthly income, must be reasonable (e.g., $2,000-$50,000/month)
-   • employmentStatus: 'full-time', 'part-time', 'self-employed', 'student'
-   • depositAmount (in $) & depositFrequency: 'weekly', 'monthly', 'yearly', 'ad hoc'
-   • riskProfile: 'conservative', 'moderate', 'aggressive'
-   • spendingHabits: 'consistent', 'variable'
-   • liquidityNeeds: 'high', 'medium', 'low'
-   • emergencyNeeds (in $) - Current emergency fund amount
-
-2. Age-Based Risk Assessment:
-   • Age 18-30: Can maintain selected risk profile (focus on growth)
-   • Age 31-45: Reduce aggressive profiles if emergency fund < 4 months
-   • Age 46-60: Maximum moderate risk unless emergency fund > 6 months
-   • Age 60+: Default to conservative unless explicitly overridden
-   • For all ages: Consider time to retirement vs. risk profile
-
-3. Emergency Fund Analysis:
-   • Calculate monthly expenses as 70% of monthly salary
-   • Required emergency fund = 3-6 months of expenses
-   • Example: If monthly salary is $5,000
-     - Monthly expenses ≈ $3,500 (70% of salary)
-     - Required emergency fund = $10,500-$21,000 (3-6 months)
-   • Flag if emergency fund is insufficient
-
-4. Income vs Investment Ratio:
-   • Calculate monthly investment:
-     - Weekly deposits: amount * 4.33
-     - Monthly deposits: amount * 1
-     - Yearly deposits: amount / 12
-     - Ad hoc: treat as yearly / 12
-   • Flag if monthly investment > 20% of monthly salary
-   • For ages 18-30: Allow up to 30% if emergency fund is sufficient
-   • For ages 31+: Maintain 20% cap strictly
-
-5. Growth Projections (MUST follow these ranges):
-   Conservative Profile:
-   • 1yr: 2-6% growth
-   • 5yr: 10-25% cumulative growth
-   • 10yr: 25-50% cumulative growth
-
-   Moderate Profile:
-   • 1yr: 4-8% growth
-   • 5yr: 20-35% cumulative growth
-   • 10yr: 40-80% cumulative growth
-
-   Aggressive Profile:
-   • 1yr: 6-12% growth
-   • 5yr: 30-50% cumulative growth
-   • 10yr: 60-120% cumulative growth
-
-6. Always return valid JSON in this shape:
+// Simplified system prompt to reduce token usage
+const systemPrompt = `Return *only* valid JSON with this schema, no additional text:
 {
   "projectedGrowth": { "1yr": number, "5yr": number, "10yr": number },
   "expectedReturn": { "min": number, "max": number },
@@ -102,73 +45,31 @@ Our AI engine verifies that each plan aligns with the user's income, deposit fre
     "volatilityScore": number,
     "originalProfile": string,
     "adjustedProfile": string,
-    "ageConsideration": string  // Explanation of how age affected the recommendation
+    "ageConsideration": string
   },
-  "suggestions": string[],  // Each suggestion must include ETF name and exact dollar amount based on monthly investment
+  "suggestions": string[],
   "warnings": string[],
   "notes": string,
-  "reasoning": string,  // Must include clear monthly salary, age considerations, and emergency fund analysis
+  "reasoning": string,
   "growthModel": {
-    "description": string,  // Detailed explanation of the growth model used
-    "assumptions": string[],  // Key assumptions made in the growth calculations
-    "factors": string[],  // Specific factors considered (e.g., inflation, market conditions, economic indicators)
-    "methodology": string  // Brief explanation of how projections were calculated
+    "description": string,
+    "assumptions": string[],
+    "factors": string[],
+    "methodology": string
   }
 }
 
-7. Base portfolio allocations (calculate exact $ based on monthly investment):
-   Conservative:
-   • 40-50% Core ETFs
-   • 20-30% Income ETFs
-   • 10-20% Defensive Sectors
-   • 10-20% International
+Growth ranges by profile:
+Conservative: 1yr: 2-6%, 5yr: 10-25%, 10yr: 25-50%
+Moderate: 1yr: 4-8%, 5yr: 20-35%, 10yr: 40-80%
+Aggressive: 1yr: 6-12%, 5yr: 30-50%, 10yr: 60-120%
 
-   Moderate:
-   • 50-60% Core ETFs
-   • 15-25% Income ETFs
-   • 15-25% Growth Sectors
-   • 15-25% International
-
-   Aggressive:
-   • 60-70% Core ETFs
-   • 10-20% Growth ETFs
-   • 20-30% Sector/Thematic ETFs
-   • 20-30% International Growth
-
-8. Risk Assessment Rules:
-   • If emergency fund < 3 months expenses: Reduce risk profile one level
-   • If monthly investment > 20% of monthly salary (30% for ages 18-30): Reduce risk profile one level
-   • If student/part-time with high liquidity needs: Maximum moderate risk
-   • If emergency fund < 1 month expenses: Force conservative profile
-   • If age > 60: Default to conservative unless explicitly justified
-   • If age 46-60: Cap at moderate unless strong financial position
-
-9. The explanation in "notes" and "reasoning" must explicitly state:
-   • Age: X years old
-   • Monthly salary: $X
-   • Monthly expenses (70% of salary): $X
-   • Required emergency fund (3-6 months expenses): $X-$X
-   • Current emergency fund: $X
-   • Monthly investment amount: $X (X% of monthly salary)
-   • Age-appropriate risk adjustments made
-   • Any other risk adjustments made and why
-
-10. Growth Model Explanation:
-    • Clearly explain the growth model used for projections
-    • List key assumptions (e.g., inflation rates, market conditions)
-    • Detail specific factors considered in the calculations
-    • Explain how different time horizons affect the projections
-    • Describe how risk profile influences the growth model
-    • For each time horizon (1yr, 5yr, 10yr) provide:
-      - Base growth rate calculation
-      - Risk-adjusted return calculation
-      - Compound interest formula applied
-      - Final percentage calculation
-   
-Note: Always refer to the system as "Click" or "Click's AI". Never use personal pronouns.
-All monetary values must be clearly marked with $ and use proper comma formatting for thousands.
-Emergency fund analysis must be based on monthly salary, not annual salary.
-Monthly salary must be treated as monthly income, not annual income divided by 12.`;
+Base your recommendations on:
+- Age vs risk tolerance
+- Emergency fund adequacy
+- Monthly investment vs salary ratio
+- Investment timeline
+- Market conditions`;
 
 // Validate user preferences before sending to API
 const validateUserPreferences = (preferences) => {
@@ -290,21 +191,52 @@ const validatePredictionResponse = (response) => {
   return true;
 };
 
-// Transform API response into the expected format
+// Improved JSON parsing with fence extraction and repair
+const extractAndRepairJson = (text) => {
+  console.log('Attempting to extract and repair JSON from:', text);
+  
+  // Try to extract JSON block
+  const match = text.match(/\{[\s\S]*\}/);
+  if (!match) {
+    console.error('No JSON object found in text');
+    throw new Error('No JSON object found in response');
+  }
+
+  let jsonStr = match[0];
+  console.log('Extracted JSON string:', jsonStr);
+
+  // Remove any trailing commas before closing brace
+  jsonStr = jsonStr.replace(/,\s*\}$/, '}');
+  
+  // Add missing closing brace if needed
+  if (!jsonStr.trim().endsWith('}')) {
+    console.log('Adding missing closing brace');
+    jsonStr += '}';
+  }
+
+  try {
+    return JSON.parse(jsonStr);
+  } catch (error) {
+    console.error('Failed to parse extracted JSON:', error);
+    throw new Error(`Failed to parse JSON: ${error.message}`);
+  }
+};
+
+// Update transformResponse to use the new extraction
 const transformResponse = (response) => {
   try {
     console.log('Transforming response:', response);
     
-    // If response is already an object, no need to parse
+    // If response is already an object, validate and return
     if (typeof response === 'object' && response !== null) {
-      console.log('Response is already an object, skipping parsing');
+      console.log('Response is already an object');
       return response;
     }
 
-    // If it's a string, try to parse it
+    // If it's a string, try to extract and parse JSON
     if (typeof response === 'string') {
-      console.log('Parsing response string as JSON');
-      return JSON.parse(response);
+      console.log('Extracting JSON from response string');
+      return extractAndRepairJson(response);
     }
 
     throw new Error('Invalid response type: ' + typeof response);
@@ -321,12 +253,12 @@ async function makeApiRequest(payload) {
   
   while (attempt < MAX_RETRIES) {
     try {
-      console.log(`Attempt ${attempt + 1}: Making Grok API request with model ${config.MODEL}`);
+      console.log(`Attempt ${attempt + 1}: Making Grok API request`);
       
       const requestPayload = {
         model: config.MODEL,
-        temperature: 0.1, // Lower temperature for more consistent JSON output
-        max_tokens: 2000,
+        temperature: 0.1,
+        max_tokens: 1000, // Reduced from 2000 to avoid truncation
         messages: [
           {
             role: "system",
@@ -334,16 +266,7 @@ async function makeApiRequest(payload) {
           },
           {
             role: "user",
-            content: [
-              "Click's AI — generate a personalized investment plan JSON.",
-              "I'm giving you a user profile below.",
-              "- You must output _only_ valid JSON with these top-level keys:",
-              "  projectedGrowth, expectedReturn, riskMetrics, suggestions, warnings, notes, reasoning",
-              "- Do not echo back the input.",
-              "",
-              "User profile:",
-              JSON.stringify(payload, null, 2)
-            ].join("\n")
+            content: "Generate investment plan JSON for this profile:\n" + JSON.stringify(payload, null, 2)
           }
         ]
       };
@@ -396,42 +319,14 @@ async function makeApiRequest(payload) {
       const jsonText = content.trim() || reasoning_content.trim();
       
       if (!jsonText) {
-        console.error('Empty content in message:', choice.message);
         throw new Error('Empty content in API response message');
       }
 
-      console.log('Raw response content:', jsonText);
-      console.log('Content type:', typeof jsonText);
-      console.log('Content length:', jsonText.length);
+      // Use the new extraction and repair function
+      const parsedResult = extractAndRepairJson(jsonText);
 
-      let parsedResult;
-      try {
-        // Parse the JSON content
-        parsedResult = JSON.parse(jsonText);
-        console.log('Successfully parsed response as JSON');
-      } catch (parseError) {
-        console.error('Failed to parse response as JSON:', {
-          error: parseError.message,
-          content: jsonText
-        });
-        throw new Error(`Invalid JSON in API response: ${parseError.message}`);
-      }
-
-      // Check for error response from Grok
-      if (parsedResult.error) {
-        console.error('Grok returned an error:', parsedResult.error);
-        throw new Error(`Grok API error: ${parsedResult.error}`);
-      }
-
-      // If Grok wrapped your payload in a top-level "predictions" key, unwrap it
-      if (parsedResult.predictions && typeof parsedResult.predictions === 'object') {
-        console.log('Unwrapping predictions from response');
-        parsedResult = parsedResult.predictions;
-      }
-
-      // Validate parsed result
+      // Validate the parsed result
       if (!parsedResult || typeof parsedResult !== 'object') {
-        console.error('Invalid parsed result:', parsedResult);
         throw new Error('Invalid response format: not a valid object');
       }
 
@@ -448,20 +343,13 @@ async function makeApiRequest(payload) {
       return parsedResult;
 
     } catch (error) {
-      console.error(`API request failed (attempt ${attempt + 1}):`, {
-        message: error.message,
-        response: error.response?.data,
-        status: error.response?.status,
-        headers: error.response?.headers
-      });
-      
+      console.error(`API request failed (attempt ${attempt + 1}):`, error);
       attempt++;
       
       if (attempt === MAX_RETRIES) {
         throw new Error(`Failed to get valid response after ${MAX_RETRIES} attempts: ${error.message}`);
       }
       
-      // Exponential backoff
       const delay = RETRY_DELAY * Math.pow(2, attempt - 1);
       console.log(`Retrying in ${delay}ms...`);
       await sleep(delay);
