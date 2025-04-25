@@ -25,13 +25,13 @@ const generateRequestId = () => {
 
 // Enhanced API configuration
 const API_CONFIG = {
-  BASE_URL: process.env.REACT_APP_GROK_API_URL || 'https://api.x.ai/v1',
+  BASE_URL: process.env.REACT_APP_GROK_API_URL || 'https://api.groq.com/v1',
   ENDPOINTS: {
     CHAT: '/chat/completions',
-    INVESTMENT: '/investment/predictions'  // Updated endpoint
+    INVESTMENT: '/chat/completions'  // Groq uses the same endpoint for all completions
   },
   API_KEY: process.env.REACT_APP_GROK_API_KEY,
-  MODEL: 'grok-v1',
+  MODEL: 'mixtral-8x7b-32768',  // Updated to use Groq's model
   VERSION: '1.0',
   MAX_RETRIES: 3,
   RETRY_DELAY: 2000,
@@ -259,15 +259,31 @@ async function makeApiRequest(payload, requestId) {
     try {
       console.log(`[${requestId}] Making API request (attempt ${attempt + 1})`);
       
+      const requestPayload = {
+        model: API_CONFIG.MODEL,
+        messages: [
+          {
+            role: "system",
+            content: systemPrompt
+          },
+          {
+            role: "user",
+            content: JSON.stringify(payload)
+          }
+        ],
+        temperature: 0.1,
+        max_tokens: 1000
+      };
+      
       const response = await axios({
         method: 'post',
-        url: `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.INVESTMENT}`,
+        url: `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.CHAT}`,
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${API_CONFIG.API_KEY}`,
           'X-Request-ID': requestId
         },
-        data: payload,
+        data: requestPayload,
         timeout: API_CONFIG.TIMEOUT
       });
 
@@ -328,204 +344,26 @@ async function makeApiRequest(payload, requestId) {
 }
 
 // Enhanced investment predictions function
-export const getInvestmentPredictions = async (preferences) => {
+export async function getInvestmentPredictions(preferences) {
   const requestId = generateRequestId();
-  console.log(`[${requestId}] Starting investment prediction request`);
-
+  console.log(`[${requestId}] Getting investment predictions with preferences:`, preferences);
+  
   try {
     // Validate preferences
-    validateUserPreferences(preferences);
-
-    // Check for API key
-    if (!API_CONFIG.API_KEY) {
-      console.warn(`[${requestId}] No Grok API key found`);
-      if (process.env.REACT_APP_USE_FALLBACK_DATA === 'true') {
-        console.log(`[${requestId}] Using fallback predictions`);
-        return {
-          ...getFallbackPredictions(preferences),
-          metadata: {
-            requestId,
-            timestamp: new Date().toISOString(),
-            isDemo: true
-          }
-        };
-      }
-      throw new GrokAPIError('Missing API key', 'MISSING_API_KEY');
+    const validationResult = validateUserPreferences(preferences);
+    if (!validationResult.isValid) {
+      console.warn(`[${requestId}] Invalid preferences:`, validationResult.errors);
+      throw new Error(`Invalid preferences: ${validationResult.errors.join(', ')}`);
     }
 
-    // Make the API request
+    // Make API request
+    console.log(`[${requestId}] Making API request to Groq`);
     return await makeApiRequest(preferences, requestId);
-
   } catch (error) {
     console.error(`[${requestId}] Error getting investment predictions:`, error);
-    
-    if (process.env.REACT_APP_USE_FALLBACK_DATA === 'true') {
-      console.warn(`[${requestId}] Using fallback predictions due to error:`, error.message);
-      return {
-        ...getFallbackPredictions(preferences),
-        metadata: {
-          requestId,
-          timestamp: new Date().toISOString(),
-          isDemo: true,
-          error: {
-            message: error.message,
-            code: error.code,
-            details: error.details
-          }
-        }
-      };
-    }
-    
     throw error;
   }
-};
-
-// Fallback function to provide demo data when API fails
-const getFallbackPredictions = (preferences) => {
-  console.log('Generating fallback predictions for:', preferences);
-  
-  // Extract key preferences
-  const { riskProfile, monthlySalary = 0, depositAmount = 0, depositFrequency } = preferences;
-  
-  // Calculate monthly investment amount
-  let monthlyInvestment = Number(depositAmount) || 0;
-  if (depositFrequency === 'weekly') {
-    monthlyInvestment = monthlyInvestment * 4.33;
-  } else if (depositFrequency === 'yearly') {
-    monthlyInvestment = monthlyInvestment / 12;
-  }
-  
-  // Calculate investment percentage of salary
-  const monthlySalaryNum = Number(monthlySalary) || 1; // Prevent division by zero
-  const investmentPercentage = (monthlyInvestment / monthlySalaryNum) * 100;
-  
-  // Generate appropriate growth projections based on risk profile
-  let projectedGrowth = {
-    '1yr': 0,
-    '5yr': 0,
-    '10yr': 0
-  };
-  
-  let expectedReturn = {
-    min: 0,
-    max: 0
-  };
-  
-  if (riskProfile === 'conservative') {
-    projectedGrowth = {
-      '1yr': 4.5,
-      '5yr': 18.2,
-      '10yr': 35.7
-    };
-    expectedReturn = {
-      min: 3.5,
-      max: 5.5
-    };
-  } else if (riskProfile === 'moderate') {
-    projectedGrowth = {
-      '1yr': 6.2,
-      '5yr': 27.5,
-      '10yr': 58.3
-    };
-    expectedReturn = {
-      min: 5.0,
-      max: 7.5
-    };
-  } else { // aggressive
-    projectedGrowth = {
-      '1yr': 8.7,
-      '5yr': 38.9,
-      '10yr': 82.4
-    };
-    expectedReturn = {
-      min: 7.0,
-      max: 10.0
-    };
-  }
-  
-  // Generate risk metrics
-  const riskMetrics = {
-    volatilityScore: riskProfile === 'conservative' ? 0.3 : (riskProfile === 'moderate' ? 0.5 : 0.7),
-    originalProfile: riskProfile,
-    adjustedProfile: riskProfile,
-    ageConsideration: "Based on your age and risk profile, we've maintained your selected risk level."
-  };
-  
-  // Generate investment suggestions with safe number handling
-  const suggestions = [];
-  const allocations = riskProfile === 'conservative' 
-    ? [
-        { percent: 0.45, fund: 'VTI (Vanguard Total Stock Market ETF)' },
-        { percent: 0.25, fund: 'BND (Vanguard Total Bond Market ETF)' },
-        { percent: 0.15, fund: 'VXUS (Vanguard Total International Stock ETF)' },
-        { percent: 0.15, fund: 'VYM (Vanguard High Dividend Yield ETF)' }
-      ]
-    : riskProfile === 'moderate'
-    ? [
-        { percent: 0.55, fund: 'VTI (Vanguard Total Stock Market ETF)' },
-        { percent: 0.20, fund: 'BND (Vanguard Total Bond Market ETF)' },
-        { percent: 0.15, fund: 'VXUS (Vanguard Total International Stock ETF)' },
-        { percent: 0.10, fund: 'VGT (Vanguard Information Technology ETF)' }
-      ]
-    : [ // aggressive
-        { percent: 0.65, fund: 'VTI (Vanguard Total Stock Market ETF)' },
-        { percent: 0.15, fund: 'VGT (Vanguard Information Technology ETF)' },
-        { percent: 0.10, fund: 'VXUS (Vanguard Total International Stock ETF)' },
-        { percent: 0.10, fund: 'ARKK (ARK Innovation ETF)' }
-      ];
-
-  allocations.forEach(({ percent, fund }) => {
-    const amount = monthlyInvestment * percent;
-    suggestions.push(`Allocate $${amount.toFixed(2)} to ${fund}`);
-  });
-  
-  // Generate warnings if investment percentage is too high
-  const warnings = [];
-  if (investmentPercentage > 20) {
-    warnings.push(`Your monthly investment of $${monthlyInvestment.toFixed(2)} represents ${investmentPercentage.toFixed(1)}% of your monthly salary, which is above the recommended 20%.`);
-  }
-  
-  // Generate notes and reasoning
-  const notes = `Based on your ${riskProfile} risk profile, we recommend a diversified portfolio with a focus on ${
-    riskProfile === 'conservative' ? 'stability and income' : 
-    riskProfile === 'moderate' ? 'balanced growth' : 
-    'aggressive growth'
-  }.`;
-  
-  const reasoning = `Your monthly investment of $${monthlyInvestment.toFixed(2)} (${investmentPercentage.toFixed(1)}% of your monthly salary) is ${
-    investmentPercentage > 20 ? 'above' : 'within'
-  } the recommended range. The ${riskProfile} risk profile is appropriate for your investment goals.`;
-  
-  // Generate growth model
-  const growthModel = {
-    description: `Based on your age and risk profile, we've maintained your selected risk level.`,
-    assumptions: [
-      'Regular monthly contributions maintained',
-      'Market conditions align with historical averages',
-      `Risk profile remains ${riskProfile}`,
-      'No major economic disruptions'
-    ],
-    factors: [
-      'Historical market performance data',
-      'Risk-adjusted return calculations',
-      'Economic growth projections',
-      'Inflation expectations'
-    ],
-    methodology: `Growth projections use compound interest calculations adjusted for ${riskProfile} risk profile, incorporating market volatility and systematic risk factors.`
-  };
-
-      return {
-    projectedGrowth,
-    expectedReturn,
-    riskMetrics,
-    suggestions,
-    warnings,
-    notes,
-    reasoning,
-    growthModel,
-    isDemo: true
-  };
-};
+}
 
 export default {
   getInvestmentPredictions
