@@ -25,13 +25,13 @@ const generateRequestId = () => {
 
 // Enhanced API configuration
 const API_CONFIG = {
-  BASE_URL: process.env.REACT_APP_GROK_API_URL || 'https://api.groq.com/v1',
+  BASE_URL: process.env.REACT_APP_GROK_API_URL || 'https://api.x.ai/v1',
   ENDPOINTS: {
     CHAT: '/chat/completions',
-    INVESTMENT: '/chat/completions'  // Groq uses the same endpoint for all completions
+    INVESTMENT: '/chat/completions'  // Using the same endpoint for all completions
   },
   API_KEY: process.env.REACT_APP_GROK_API_KEY,
-  MODEL: 'mixtral-8x7b-32768',  // Updated to use Groq's model
+  MODEL: 'grok-1',  // Updated to use correct model name
   VERSION: '1.0',
   MAX_RETRIES: 3,
   RETRY_DELAY: 2000,
@@ -297,8 +297,11 @@ async function makeApiRequest(payload, requestId) {
           }
         ],
         temperature: 0.1,
-        max_tokens: 1000
+        max_tokens: 1000,
+        stream: false
       };
+      
+      console.log(`[${requestId}] Request payload:`, requestPayload);
       
       const response = await axios({
         method: 'post',
