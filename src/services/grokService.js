@@ -24,19 +24,24 @@ const generateRequestId = () => {
 };
 
 // Enhanced API configuration
-const config = {
+const API_CONFIG = {
   BASE_URL: process.env.REACT_APP_GROK_API_URL || 'https://api.x.ai/v1',
+  ENDPOINTS: {
+    CHAT: '/chat/completions',
+    INVESTMENT: '/investment/predictions'  // Updated endpoint
+  },
   API_KEY: process.env.REACT_APP_GROK_API_KEY,
   MODEL: 'grok-v1',
   VERSION: '1.0',
   MAX_RETRIES: 3,
   RETRY_DELAY: 2000,
-  TIMEOUT: 30000
+  TIMEOUT: 30000,
+  BATCH_SIZE: 5
 };
 
 // Create an axios instance with default configuration
 const grokClient = axios.create({
-  baseURL: config.BASE_URL,
+  baseURL: API_CONFIG.BASE_URL,
   headers: {
     'Content-Type': 'application/json'
   },
@@ -45,7 +50,7 @@ const grokClient = axios.create({
 
 // Add authorization header dynamically
 grokClient.interceptors.request.use((config) => {
-  const apiKey = process.env.REACT_APP_GROK_API_KEY;
+  const apiKey = API_CONFIG.API_KEY;
   if (!apiKey) {
   console.error('Missing Grok API key. Please set REACT_APP_GROK_API_KEY environment variable.');
     if (process.env.REACT_APP_USE_FALLBACK_DATA === 'true') {
@@ -63,7 +68,7 @@ grokClient.interceptors.request.use((config) => {
 // Enhanced system prompt to better explain the context and requirements
 const systemPrompt = `
 You are Click's Investment Prediction AI (Prototype). Click is world's first AI proxy, transparent wealth manager that:
-1. Learns from your age, emergency fund, risk appetite, income vs. investment ratio, and employment.
+1. Learns from your age, emergency fund, risk appetite, income vs. investment ratio, and employment, and self corrects in real time. 
 2. Adapts risk on the fly—downgrading overly aggressive plans and explaining why in plain English.
 3. Projects returns and suggests ETF allocations in seconds, with clear summaries of your key metrics.
 4. This is a demo trailer of what the full Click system will ultimately deliver for everyday investors.
@@ -246,42 +251,24 @@ const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 // Enhanced API request with better error handling
 async function makeApiRequest(payload, requestId) {
-  let attempt = 0;
   const startTime = Date.now();
+  let attempt = 0;
+  let lastError = null;
   
-  while (attempt < config.MAX_RETRIES) {
+  while (attempt < API_CONFIG.MAX_RETRIES) {
     try {
-      console.log(`[${requestId}] Attempt ${attempt + 1}: Making Grok API request`);
+      console.log(`[${requestId}] Making API request (attempt ${attempt + 1})`);
       
-      const userMessage = {
-        type: "investment_prediction_request",
-        version: config.VERSION,
-        requestId,
-        timestamp: new Date().toISOString(),
-        preferences: payload
-      };
-
-      const requestPayload = {
-        model: config.MODEL,
-        temperature: 0.1,
-        max_tokens: 1000,
-        messages: [
-          {
-            role: "system",
-            content: systemPrompt
-          },
-          {
-            role: "user",
-            content: JSON.stringify(userMessage, null, 2)
-          }
-        ]
-      };
-
-      const response = await grokClient.post('/chat/completions', requestPayload, {
-        timeout: config.TIMEOUT,
+      const response = await axios({
+        method: 'post',
+        url: `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.INVESTMENT}`,
         headers: {
-          'Request-ID': requestId
-        }
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${API_CONFIG.API_KEY}`,
+          'X-Request-ID': requestId
+        },
+        data: payload,
+        timeout: API_CONFIG.TIMEOUT
       });
 
       if (!response.data?.choices?.[0]?.message?.content) {
@@ -329,11 +316,11 @@ async function makeApiRequest(payload, requestId) {
 
       attempt++;
       
-      if (attempt === config.MAX_RETRIES) {
+      if (attempt === API_CONFIG.MAX_RETRIES) {
         throw enhancedError;
       }
       
-      const delay = config.RETRY_DELAY * Math.pow(2, attempt - 1);
+      const delay = API_CONFIG.RETRY_DELAY * Math.pow(2, attempt - 1);
       console.log(`[${requestId}] Retrying in ${delay}ms...`);
       await sleep(delay);
     }
@@ -350,7 +337,7 @@ export const getInvestmentPredictions = async (preferences) => {
     validateUserPreferences(preferences);
 
     // Check for API key
-    if (!config.API_KEY) {
+    if (!API_CONFIG.API_KEY) {
       console.warn(`[${requestId}] No Grok API key found`);
       if (process.env.REACT_APP_USE_FALLBACK_DATA === 'true') {
         console.log(`[${requestId}] Using fallback predictions`);
