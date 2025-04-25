@@ -20,13 +20,13 @@ const grokClient = axios.create({
 grokClient.interceptors.request.use((config) => {
   const apiKey = process.env.REACT_APP_GROK_API_KEY;
   if (!apiKey) {
-    console.error('Missing Grok API key. Please set REACT_APP_GROK_API_KEY environment variable.');
+  console.error('Missing Grok API key. Please set REACT_APP_GROK_API_KEY environment variable.');
     if (process.env.REACT_APP_USE_FALLBACK_DATA === 'true') {
       console.warn('Fallback data is enabled, will use demo data');
       return Promise.reject(new Error('API key not found - using fallback data'));
     }
     return Promise.reject(new Error('API key not found'));
-  }
+}
   config.headers.Authorization = `Bearer ${apiKey}`;
   return config;
 }, (error) => {
@@ -36,40 +36,55 @@ grokClient.interceptors.request.use((config) => {
 const MAX_RETRIES = 3;
 const RETRY_DELAY = 2000;
 
-// Simplified system prompt to reduce token usage
-const systemPrompt = `Return *only* valid JSON with this schema, no additional text:
+// Enhanced system prompt to better explain the context and requirements
+const systemPrompt = `You are Click's Investment Prediction AI. Your role is to analyze user profiles and generate detailed investment projections.
+
+ALWAYS return a complete JSON object with ALL of these fields (no fields can be empty or missing):
+
 {
-  "projectedGrowth": { "1yr": number, "5yr": number, "10yr": number },
-  "expectedReturn": { "min": number, "max": number },
-  "riskMetrics": {
-    "volatilityScore": number,
-    "originalProfile": string,
-    "adjustedProfile": string,
-    "ageConsideration": string
+  "projectedGrowth": {
+    "1yr": number (annual growth percentage),
+    "5yr": number (5-year cumulative growth percentage),
+    "10yr": number (10-year cumulative growth percentage)
   },
-  "suggestions": string[],
-  "warnings": string[],
-  "notes": string,
-  "reasoning": string,
+  "expectedReturn": {
+    "min": number (minimum annual return percentage),
+    "max": number (maximum annual return percentage)
+  },
+  "riskMetrics": {
+    "volatilityScore": number (0-1 scale),
+    "originalProfile": string (user's selected risk profile),
+    "adjustedProfile": string (recommended risk profile),
+    "ageConsideration": string (explanation of age impact)
+  },
+  "suggestions": string[] (array of specific ETF allocation suggestions),
+  "warnings": string[] (array of risk warnings),
+  "notes": string (general investment strategy notes),
+  "reasoning": string (detailed explanation of recommendations),
   "growthModel": {
-    "description": string,
-    "assumptions": string[],
-    "factors": string[],
-    "methodology": string
+    "description": string (model overview),
+    "assumptions": string[] (list of key assumptions),
+    "factors": string[] (list of considered factors),
+    "methodology": string (calculation approach)
   }
 }
 
-Growth ranges by profile:
+Growth projections MUST follow these ranges:
 Conservative: 1yr: 2-6%, 5yr: 10-25%, 10yr: 25-50%
 Moderate: 1yr: 4-8%, 5yr: 20-35%, 10yr: 40-80%
 Aggressive: 1yr: 6-12%, 5yr: 30-50%, 10yr: 60-120%
 
-Base your recommendations on:
+Base recommendations on:
 - Age vs risk tolerance
-- Emergency fund adequacy
-- Monthly investment vs salary ratio
+- Emergency fund adequacy (3-6 months of expenses)
+- Monthly investment vs salary ratio (flag if >20%)
 - Investment timeline
-- Market conditions`;
+- Market conditions
+
+Portfolio allocations by risk profile:
+Conservative: 45% Core ETFs, 25% Bonds, 15% International, 15% Dividend
+Moderate: 55% Core ETFs, 20% Bonds, 15% International, 10% Tech
+Aggressive: 65% Core ETFs, 15% Tech, 10% International, 10% Growth`;
 
 // Validate user preferences before sending to API
 const validateUserPreferences = (preferences) => {
@@ -87,9 +102,9 @@ const validateUserPreferences = (preferences) => {
   const missingFields = requiredFields.filter(field => !preferences[field]);
   if (missingFields.length > 0) {
     throw new Error(`Missing required fields: ${missingFields.join(', ')}`);
-  }
+    }
 
-  // Validate numeric fields
+    // Validate numeric fields
   if (isNaN(preferences.monthlySalary) || preferences.monthlySalary <= 0) {
     throw new Error('Monthly salary must be a positive number');
   }
@@ -277,6 +292,7 @@ const transformResponse = (response) => {
 
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
+// Update makeApiRequest to properly structure the user message
 async function makeApiRequest(payload) {
   let attempt = 0;
   
@@ -284,6 +300,19 @@ async function makeApiRequest(payload) {
     try {
       console.log(`Attempt ${attempt + 1}: Making Grok API request`);
       
+      const userMessage = `Generate investment predictions for this user profile. Return ONLY the JSON response matching the specified schema.
+
+Profile Details:
+- Monthly Salary: $${payload.monthlySalary}
+- Employment: ${payload.employmentStatus}
+- Age: ${payload.age || 'Not specified'}
+- Risk Profile: ${payload.riskProfile}
+- Deposit Amount: $${payload.depositAmount}
+- Deposit Frequency: ${payload.depositFrequency}
+- Emergency Fund: $${payload.emergencyNeeds || 0}
+- Liquidity Needs: ${payload.liquidityNeeds}
+- Spending Habits: ${payload.spendingHabits}`;
+
       const requestPayload = {
         model: config.MODEL,
         temperature: 0.1,
@@ -295,10 +324,12 @@ async function makeApiRequest(payload) {
           },
           {
             role: "user",
-            content: "Return ONLY the JSON object with no additional text. Profile:\n" + JSON.stringify(payload, null, 2)
+            content: userMessage
           }
         ]
       };
+
+      console.log('Sending request with payload:', userMessage);
 
       const response = await grokClient.post('/chat/completions', requestPayload);
       
@@ -312,6 +343,31 @@ async function makeApiRequest(payload) {
       // Parse and validate the response
       const parsedResult = extractAndRepairJson(content);
       
+      // Additional validation to ensure no empty or invalid values
+      const validateField = (obj, path = '') => {
+        if (!obj) return [`${path} is empty or null`];
+        
+        let errors = [];
+        if (typeof obj === 'object') {
+          Object.entries(obj).forEach(([key, value]) => {
+            const newPath = path ? `${path}.${key}` : key;
+            if (value === null || value === undefined || value === '') {
+              errors.push(`${newPath} is empty or null`);
+            } else if (Array.isArray(value) && value.length === 0) {
+              errors.push(`${newPath} array is empty`);
+            } else if (typeof value === 'object') {
+              errors = errors.concat(validateField(value, newPath));
+            }
+          });
+        }
+        return errors;
+      };
+
+      const validationErrors = validateField(parsedResult);
+      if (validationErrors.length > 0) {
+        throw new Error(`Validation errors: ${validationErrors.join(', ')}`);
+      }
+
       // Ensure all required fields are present with correct types
       const requiredFields = {
         projectedGrowth: ['1yr', '5yr', '10yr'],
@@ -537,8 +593,8 @@ const getFallbackPredictions = (preferences) => {
     ],
     methodology: `Growth projections use compound interest calculations adjusted for ${riskProfile} risk profile, incorporating market volatility and systematic risk factors.`
   };
-  
-  return {
+
+      return {
     projectedGrowth,
     expectedReturn,
     riskMetrics,
@@ -553,4 +609,4 @@ const getFallbackPredictions = (preferences) => {
 
 export default {
   getInvestmentPredictions
-};
+}; 
