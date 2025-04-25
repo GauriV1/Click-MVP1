@@ -294,6 +294,12 @@ async function makeApiRequest(payload, requestId) {
       // Parse and validate the response
       const parsedResult = extractAndRepairJson(content);
       
+      // Log risk profile changes if they occur
+      if (parsedResult.riskMetrics && 
+          parsedResult.riskMetrics.originalProfile !== parsedResult.riskMetrics.adjustedProfile) {
+        console.log(`[${requestId}] Risk profile adjusted from ${parsedResult.riskMetrics.originalProfile} to ${parsedResult.riskMetrics.adjustedProfile}`);
+      }
+      
       // Add metadata to the response
       return {
         ...parsedResult,
