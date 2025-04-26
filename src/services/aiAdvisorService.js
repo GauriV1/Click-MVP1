@@ -2,23 +2,16 @@ import axios from 'axios';
 
 // API Configuration
 const config = {
-  BASE_URL: process.env.REACT_APP_GROK_API_URL || 'https://api.x.ai/v1',
-  API_KEY: process.env.REACT_APP_GROK_API_KEY,
+  BASE_URL: '', // calls relative to your own domain
+  ENDPOINT: '/api/grok',
   MODEL: 'grok-3-mini-fast-beta'
 };
-
-// Validate API key
-if (!config.API_KEY) {
-  console.error('Missing Grok API key. Please set REACT_APP_GROK_API_KEY environment variable.');
-  throw new Error('Missing REACT_APP_GROK_API_KEY environment variable');
-}
 
 // Create an axios instance with default configuration
 const grokClient = axios.create({
   baseURL: config.BASE_URL,
   headers: {
-    'Content-Type': 'application/json',
-    'Authorization': `Bearer ${config.API_KEY}`
+    'Content-Type': 'application/json'
   },
   timeout: 60000
 });
@@ -108,12 +101,14 @@ const validateResponse = (response) => {
 
 async function makeApiRequest(question) {
   let attempt = 0;
+  let lastError = null;
   
   while (attempt < MAX_RETRIES) {
     try {
+      console.log(`Making AI advisor request (attempt ${attempt + 1})`);
+      
       const requestPayload = {
         model: config.MODEL,
-        temperature: 0.7, // Higher temperature for more conversational responses
         messages: [
           {
             role: "system",
@@ -124,30 +119,52 @@ async function makeApiRequest(question) {
             content: question
           }
         ],
-        response_format: { type: "json_object" }
+        temperature: 0.7,
+        max_tokens: 1000,
+        stream: false
+      };
+      
+      console.log(`Request payload:`, requestPayload);
+      console.log(`→ Calling Grok proxy at ${config.BASE_URL}${config.ENDPOINT} with model ${config.MODEL}`);
+      
+      const response = await axios({
+        method: 'post',
+        url: `${config.BASE_URL}${config.ENDPOINT}`,
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        data: requestPayload,
+        timeout: 60000
+      });
+
+      if (!response.data?.choices?.[0]?.message?.content) {
+        throw new Error('Invalid API response structure');
+      }
+
+      const content = response.data.choices[0].message.content.trim();
+      console.log(`Raw API response content:`, content);
+
+      return {
+        advice: content,
+        metadata: {
+          timestamp: new Date().toISOString(),
+          attempt: attempt + 1
+        }
       };
 
-      const response = await grokClient.post('/chat/completions', requestPayload);
-      
-      if (!response.data?.choices?.[0]?.message?.content) {
-        throw new Error('Invalid response format from Grok API');
-      }
-
-      const result = JSON.parse(response.data.choices[0].message.content);
-      validateResponse(result);
-      return result;
-
     } catch (error) {
-      console.error(`AI Advisor request failed (attempt ${attempt + 1}):`, error.message);
+      console.error(`API request failed (attempt ${attempt + 1}):`, error);
+      lastError = error;
       attempt++;
       
-      if (attempt === MAX_RETRIES) {
-        throw new Error(`Failed to get response after ${MAX_RETRIES} attempts: ${error.message}`);
+      if (attempt < MAX_RETRIES) {
+        console.log(`Retrying in ${RETRY_DELAY}ms...`);
+        await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
       }
-      
-      await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
     }
   }
+  
+  throw lastError || new Error('Failed to get AI advice after multiple attempts');
 }
 
 export const getAIAdvice = async (question) => {
