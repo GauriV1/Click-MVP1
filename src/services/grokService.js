@@ -25,10 +25,8 @@ const generateRequestId = () => {
 
 // Enhanced API configuration
 const API_CONFIG = {
-  BASE_URL: '/api',
-  ENDPOINTS: {
-    CHAT: '/grok'
-  },
+  BASE_URL: '',                 // calls relative to your own domain
+  ENDPOINTS: { CHAT: '/api/grok' },
   API_KEY: null,
   MODEL: 'grok-3-mini-fast-beta',
   VERSION: '1.0',

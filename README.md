@@ -17,9 +17,8 @@ This service handles automated market data loading for stocks, ETFs, and bonds a
    ```
    REACT_APP_FINNHUB_API_KEY=your_api_key_here
    ```
-3. Add your Grok API key (both client-side and server-side):
+3. Add your Grok API key (server-side only):
    ```
-   REACT_APP_GROK_API_KEY=your_grok_api_key_here
    GROK_API_KEY=your_grok_api_key_here
    ```
 
@@ -118,17 +117,30 @@ To set up your environment:
 
 ## API Proxy for Grok
 
-To avoid CORS issues when calling the Grok API, we use a server-side proxy:
+To avoid CORS issues when calling the Grok API, we use a Vercel serverless function:
 
 1. The frontend makes requests to `/api/grok` instead of directly to the Grok API
-2. The server-side proxy (`src/routes/grokProxy.js`) forwards these requests to the Grok API
+2. The Vercel serverless function (`/api/grok.js`) forwards these requests to the Grok API
 3. The API key is stored server-side as `GROK_API_KEY` (without the REACT_APP_ prefix)
 4. This approach prevents CORS errors and keeps the API key secure
 
 ### Deployment
 
-When deploying to Vercel or another platform:
+When deploying to Vercel:
 
-1. Set the `GROK_API_KEY` environment variable (without the REACT_APP_ prefix)
-2. The frontend will automatically use the proxy endpoint
-3. No changes to the frontend code are needed 
+1. Set the `GROK_API_KEY` environment variable (without the REACT_APP_ prefix):
+   ```
+   vercel env add GROK_API_KEY production
+   # → paste your Grok key
+   
+   vercel env add GROK_API_KEY preview
+   # → paste your Grok key
+   ```
+
+2. Deploy your project:
+   ```
+   vercel --prod --force
+   ```
+
+3. The frontend will automatically use the serverless function endpoint
+4. No changes to the frontend code are needed 
