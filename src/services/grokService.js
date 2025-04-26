@@ -25,11 +25,11 @@ const generateRequestId = () => {
 
 // Enhanced API configuration
 const API_CONFIG = {
-  BASE_URL: process.env.REACT_APP_GROK_API_URL || 'https://api.x.ai',
+  BASE_URL: '/api',
   ENDPOINTS: {
-    CHAT: '/v1/chat/completions'
+    CHAT: '/grok'
   },
-  API_KEY: process.env.REACT_APP_GROK_API_KEY,
+  API_KEY: null,
   MODEL: 'grok-3-mini-fast-beta',
   VERSION: '1.0',
   MAX_RETRIES: 3,
@@ -301,14 +301,13 @@ async function makeApiRequest(payload, requestId) {
       };
       
       console.log(`[${requestId}] Request payload:`, requestPayload);
-      console.log(`[${requestId}] → Calling Grok at ${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.CHAT} with model ${API_CONFIG.MODEL}`);
+      console.log(`[${requestId}] → Calling Grok proxy at ${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.CHAT} with model ${API_CONFIG.MODEL}`);
       
       const response = await axios({
         method: 'post',
         url: `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.CHAT}`,
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${API_CONFIG.API_KEY}`,
           'X-Request-ID': requestId
         },
         data: requestPayload,

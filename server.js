@@ -2,6 +2,7 @@ import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import aiAdvisorRoutes from './src/routes/aiAdvisor.js';
+import grokProxyRoutes from './src/routes/grokProxy.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -33,6 +34,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // API routes
 app.use('/api', aiAdvisorRoutes);
+app.use('/api', grokProxyRoutes);
 
 // Serve static files from the React app
 app.use(express.static(path.join(__dirname, 'build')));
