@@ -52,68 +52,53 @@ An AI-powered investment platform that democratizes trading and empowers investo
 ## Setup
 
 1. Clone the repository:
-```bash
-git clone https://github.com/GauriV1/Click-MVP1.git
-cd Click-MVP1
-```
+   ```
+   git clone https://github.com/yourusername/click-mvp1.git
+   cd click-mvp1
+   ```
 
 2. Install dependencies:
-```bash
-npm install
-```
+   ```
+   npm install
+   ```
 
-3. Set up environment variables:
-```bash
-# Copy the environment template
-cp .env.template .env
-
-# Edit .env and add your API keys
-# Required API keys:
-# - REACT_APP_GROK_API_KEY: Get from x.ai
-# - REACT_APP_FINNHUB_API_KEY: Get from finnhub.io
-```
+3. Create a `.env` file in the root directory with the following variables:
+   ```
+   # API Keys
+   REACT_APP_FINNHUB_API_KEY=your_finnhub_api_key_here
+   GROK_API_KEY=your_grok_api_key_here
+   
+   # Feature Flags
+   REACT_APP_USE_FALLBACK_DATA=false
+   ```
 
 4. Start the development server:
-```bash
-npm start
-```
+   ```
+   npm start
+   ```
+
+## Features
+
+- Real-time market data visualization
+- AI-powered investment recommendations
+- Portfolio tracking and analysis
+- Risk assessment and management
+- Educational resources for investors
+
+## Tech Stack
+
+- **Frontend**: React, Chart.js, Axios
+- **Backend**: Node.js, Express
+- **APIs**: Finnhub, Grok AI
+- **Deployment**: Vercel
 
 ## Environment Variables
 
 The following environment variables are required:
 
-## API Keys
-- `REACT_APP_GROK_API_KEY`: API key for Grok AI services (Get from x.ai)
-- `REACT_APP_GROK_API_URL`: Base URL for Grok API (defaults to https://api.x.ai/v1)
-
-## Feature Flags
-- `REACT_APP_USE_FALLBACK_DATA`: Whether to use fallback data when API calls fail (true/false)
-
-To set up your environment:
-1. Copy `.env.template` to `.env`
-2. Fill in your API keys
-3. Never commit `.env` to version control
-
-## Features
-
-- AI-powered investment recommendations
-- Real-time market data
-- Personalized portfolio management
-- Risk assessment and adjustments
-- Educational resources
-
-## Contributing
-
-1. Create a new branch for your feature
-2. Make your changes
-3. Submit a pull request
-
-## Security
-
-- All API keys should be stored in environment variables
-- Never commit sensitive credentials
-- Use environment variables for all configuration
-- Keep dependencies updated
+- `REACT_APP_FINNHUB_API_KEY`: Your Finnhub API key
+- `GROK_API_KEY`: Your Grok API key (server-side only)
+- `REACT_APP_USE_FALLBACK_DATA`: Whether to use fallback data when API calls fail
 
 ## API Proxy for Grok
 
@@ -143,4 +128,22 @@ When deploying to Vercel:
    ```
 
 3. The frontend will automatically use the serverless function endpoint
-4. No changes to the frontend code are needed 
+4. No changes to the frontend code are needed
+
+## Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Acknowledgments
+
+- Finnhub for providing market data
+- Grok AI for investment recommendations
+- All contributors who have helped shape this project 
