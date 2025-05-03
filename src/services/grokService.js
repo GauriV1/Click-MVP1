@@ -397,6 +397,8 @@ export async function getInvestmentPredictions(preferences) {
   }
 }
 
-export default {
+const GrokService = {
   getInvestmentPredictions
-}; 
+};
+
+export default GrokService; 

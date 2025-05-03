@@ -27,7 +27,7 @@ ChartJS.register(
   Filler
 );
 
-const InvestmentPredictions = ({ predictions, monthlyAmount, preferences }) => {
+const InvestmentPredictions = ({ predictions, _monthlyAmount, preferences }) => {
   if (!predictions) {
     return (
       <div className="predictions-container error">
@@ -280,7 +280,7 @@ InvestmentPredictions.propTypes = {
     reasoning: PropTypes.string,
     disclaimer: PropTypes.string
   }),
-  monthlyAmount: PropTypes.number,
+  _monthlyAmount: PropTypes.number,
   preferences: PropTypes.object
 };
 

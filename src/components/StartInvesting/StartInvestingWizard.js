@@ -4,7 +4,7 @@ import InvestmentTypeStep from './InvestmentTypeStep';
 import DepositAmountStep from './DepositAmountStep';
 import RiskProfileStep from './RiskProfileStep';
 import SpendingHabitsStep from './SpendingHabitsStep';
-import Step5_LifestyleIncome from './Step5_LifestyleIncome';
+import Step5LifestyleIncome from './Step5LifestyleIncome';
 import InvestmentPredictions from './InvestmentPredictions';
 import LoadingScreen from './LoadingScreen';
 import { getInvestmentPredictions } from '../../services/grokService';
@@ -325,7 +325,7 @@ const StartInvestingWizard = () => {
       case 4:
         return <SpendingHabitsStep {...commonProps} />;
       case 5:
-        return <Step5_LifestyleIncome {...commonProps} />;
+        return <Step5LifestyleIncome {...commonProps} />;
       case 6:
         return (
           <div className="results-step">
