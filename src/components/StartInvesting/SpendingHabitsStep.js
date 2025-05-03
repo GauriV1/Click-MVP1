@@ -4,12 +4,10 @@ import '../../styles/StartInvesting/Step4_SpendingHabits.css';
 
 export default function Step4_SpendingHabits({ data = {}, updateData, prevStep, nextStep }) {
   const handleSpendingHabits = (habits) => {
-    console.log('Setting spending habits:', habits);
     updateData({ spendingHabits: habits });
   };
 
   const handleLiquidityNeeds = (needs) => {
-    console.log('Setting liquidity needs:', needs);
     updateData({ liquidityNeeds: needs });
   };
 
@@ -17,6 +15,10 @@ export default function Step4_SpendingHabits({ data = {}, updateData, prevStep, 
     if (data.spendingHabits && data.liquidityNeeds) {
       nextStep();
     }
+  };
+
+  const handleSpendingChange = (value) => {
+    handleSpendingHabits(value);
   };
 
   return (
@@ -33,7 +35,7 @@ export default function Step4_SpendingHabits({ data = {}, updateData, prevStep, 
           <button
             type="button"
             className={`spending-option ${data.spendingHabits === 'consistent' ? 'selected' : ''}`}
-            onClick={() => handleSpendingHabits('consistent')}
+            onClick={() => handleSpendingChange('consistent')}
           >
             <h4>Consistent Spender</h4>
             <p>Predictable Expenses: You have a steady monthly income and regular bills</p>
@@ -50,7 +52,7 @@ export default function Step4_SpendingHabits({ data = {}, updateData, prevStep, 
           <button
             type="button"
             className={`spending-option ${data.spendingHabits === 'variable' ? 'selected' : ''}`}
-            onClick={() => handleSpendingHabits('variable')}
+            onClick={() => handleSpendingChange('variable')}
           >
             <h4>Variable Spender</h4>
             <p>Unpredictable Expenses: Your income or spending changes from month to month</p>

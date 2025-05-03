@@ -2,13 +2,7 @@ import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 import '../../styles/StartInvesting/Step5_LifestyleIncome.css';
 
-const Step5_LifestyleIncome = ({
-  data = {},
-  updateData = () => {},
-  nextStep = () => {},
-  prevStep = () => {},
-  submitForm = () => {}
-}) => {
+export default function Step5_LifestyleIncome({ data = {}, updateData, prevStep }) {
   const [localData, setLocalData] = useState({
     employmentStatus: data.employmentStatus || '',
     monthlySalary: data.monthlySalary || '',
@@ -116,9 +110,6 @@ const Step5_LifestyleIncome = ({
 
         // Update parent component with final data
         updateData(finalData);
-        
-        // Call the parent's submit function
-        submitForm();
       } catch (error) {
         console.error('Error processing form data:', error);
         setErrors(prev => ({
@@ -134,24 +125,6 @@ const Step5_LifestyleIncome = ({
         errorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
     }
-  };
-
-  const calculateMonthlyExpenses = (expenses, monthlySalary) => {
-    // Estimate monthly expenses based on selected categories
-    const expenseRatios = {
-      'Rent/Mortgage': 0.3,
-      'Groceries': 0.15,
-      'Utilities': 0.1,
-      'Transportation': 0.15,
-      'Healthcare': 0.1,
-      'Entertainment': 0.1,
-      'Education': 0.15,
-      'Insurance': 0.05
-    };
-
-    return expenses.reduce((total, expense) => {
-      return total + (monthlySalary * (expenseRatios[expense] || 0));
-    }, 0).toFixed(2);
   };
 
   const expenseCategories = [
@@ -293,14 +266,10 @@ const Step5_LifestyleIncome = ({
       </form>
     </div>
   );
-};
+}
 
 Step5_LifestyleIncome.propTypes = {
   data: PropTypes.object,
   updateData: PropTypes.func,
-  nextStep: PropTypes.func,
-  prevStep: PropTypes.func,
-  submitForm: PropTypes.func
-};
-
-export default Step5_LifestyleIncome; 
+  prevStep: PropTypes.func
+}; 

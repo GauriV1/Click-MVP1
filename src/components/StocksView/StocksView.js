@@ -31,7 +31,7 @@ const StocksView = () => {
     const interval = setInterval(fetchStockData, 60000); // Update every minute
 
     return () => clearInterval(interval);
-  }, [activeCategory]);
+  }, [tickers]);
 
   if (loading) {
     return <div className="loading">Loading stock data...</div>;

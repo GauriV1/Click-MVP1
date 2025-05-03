@@ -6,10 +6,8 @@ export default function Step1_InvestmentType({ data = {}, updateData, nextStep }
   // Safely access investmentType with a default value
   const { investmentType = '' } = data;
 
-  const handleSelection = (type) => {
-    console.log('Selected investment type:', type);
+  const handleInvestmentTypeChange = (type) => {
     updateData({ investmentType: type });
-    // Let the parent component handle navigation after state update
   };
 
   return (
@@ -20,7 +18,7 @@ export default function Step1_InvestmentType({ data = {}, updateData, nextStep }
       <div className="options-container">
         <div 
           className={`option-card ${investmentType === 'partial' ? 'selected' : ''}`}
-          onClick={() => handleSelection('partial')}
+          onClick={() => handleInvestmentTypeChange('partial')}
         >
           <h3>Partial Shares</h3>
           <p>Buy pieces of a company's stock without needing to purchase a full share</p>
@@ -33,7 +31,7 @@ export default function Step1_InvestmentType({ data = {}, updateData, nextStep }
 
         <div 
           className={`option-card ${investmentType === 'whole' ? 'selected' : ''}`}
-          onClick={() => handleSelection('whole')}
+          onClick={() => handleInvestmentTypeChange('whole')}
         >
           <h3>Whole Shares</h3>
           <p>Own entire shares in a company—like traditional investors</p>

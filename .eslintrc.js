@@ -8,6 +8,8 @@ module.exports = {
     'eslint:recommended',
     'plugin:react/recommended',
     'plugin:react-hooks/recommended',
+    'react-app',
+    'react-app/jest'
   ],
   parserOptions: {
     ecmaFeatures: {
@@ -22,8 +24,12 @@ module.exports = {
     'react/prop-types': 'off',
     'react-hooks/rules-of-hooks': 'error',
     'react-hooks/exhaustive-deps': 'warn',
-    'no-unused-vars': ['warn', { 'argsIgnorePattern': '^_' }],
-    'no-console': ['warn', { allow: ['error', 'warn'] }],
+    'no-unused-vars': ['warn', { 
+      argsIgnorePattern: '^_',
+      varsIgnorePattern: '^_',
+      caughtErrorsIgnorePattern: '^_'
+    }],
+    'no-console': 'off',
     'react/no-unescaped-entities': 'off'
   },
   settings: {

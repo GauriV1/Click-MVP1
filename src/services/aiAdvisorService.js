@@ -105,7 +105,9 @@ async function makeApiRequest(question) {
   
   while (attempt < MAX_RETRIES) {
     try {
-      console.log(`Making AI advisor request (attempt ${attempt + 1})`);
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`Making AI advisor request (attempt ${attempt + 1})`);
+      }
       
       const requestPayload = {
         model: config.MODEL,
@@ -124,8 +126,10 @@ async function makeApiRequest(question) {
         stream: false
       };
       
-      console.log(`Request payload:`, requestPayload);
-      console.log(`→ Calling Grok proxy at ${config.BASE_URL}${config.ENDPOINT} with model ${config.MODEL}`);
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`Request payload:`, requestPayload);
+        console.log(`→ Calling Grok proxy at ${config.BASE_URL}${config.ENDPOINT} with model ${config.MODEL}`);
+      }
       
       const response = await axios({
         method: 'post',
@@ -142,7 +146,9 @@ async function makeApiRequest(question) {
       }
 
       const content = response.data.choices[0].message.content.trim();
-      console.log(`Raw API response content:`, content);
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`Raw API response content:`, content);
+      }
 
       return {
         advice: content,
@@ -153,12 +159,16 @@ async function makeApiRequest(question) {
       };
 
     } catch (error) {
-      console.error(`API request failed (attempt ${attempt + 1}):`, error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error(`API request failed (attempt ${attempt + 1}):`, error);
+      }
       lastError = error;
       attempt++;
       
       if (attempt < MAX_RETRIES) {
-        console.log(`Retrying in ${RETRY_DELAY}ms...`);
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`Retrying in ${RETRY_DELAY}ms...`);
+        }
         await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
       }
     }
@@ -176,7 +186,9 @@ export const getAIAdvice = async (question) => {
     return await makeApiRequest(question);
 
   } catch (error) {
-    console.error('AI Advisor error:', error);
+    if (process.env.NODE_ENV === 'development') {
+      console.error('AI Advisor error:', error);
+    }
     throw error;
   }
 };

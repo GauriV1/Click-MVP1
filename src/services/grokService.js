@@ -297,7 +297,10 @@ async function makeApiRequest(payload, requestId) {
         stream: false
       };
       
-      console.log(`[${requestId}] Request payload:`, requestPayload);
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Making Grok API request:', requestPayload);
+      }
+      
       console.log(`[${requestId}] → Calling Grok proxy at ${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.CHAT} with model ${API_CONFIG.MODEL}`);
       
       const response = await axios({

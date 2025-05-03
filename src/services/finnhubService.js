@@ -76,7 +76,9 @@ export const getStockData = async (symbol) => {
       throw new Error('Rate limit exceeded. Please try again later.');
     }
 
-    console.log(`Fetching data for ${symbol} from Finnhub...`);
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Fetching stock data for:', symbol);
+    }
     const response = await axios.get(`${FINNHUB_BASE_URL}/quote`, {
       params: {
         symbol: symbol,

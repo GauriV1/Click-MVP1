@@ -284,60 +284,21 @@ const StartInvestingWizard = () => {
     }
   }, [preferences, currentStep, handleError]);
 
-  const handleNext = useCallback(() => {
-    // Don't allow proceeding to next step if we're loading or there's an error
-    if (loading || error) {
-      return;
+  const handleNext = () => {
+    if (currentStep < 6) {
+      setCurrentStep(currentStep + 1);
     }
-    
-    console.log('Handling next step. Current step:', currentStep);
-    console.log('Current preferences state:', preferences);
-    
-    let canProceed = true;
-    let errorMessage = '';
+  };
 
-    switch (currentStep) {
-      case 1:
-        if (!preferences.investmentType) {
-          canProceed = false;
-          errorMessage = 'Please select an investment type';
-        }
-        break;
-      case 2:
-        if (!preferences.depositAmount || !preferences.depositFrequency) {
-          canProceed = false;
-          errorMessage = 'Please enter deposit amount and frequency';
-        }
-        break;
-      case 3:
-        if (!preferences.riskProfile) {
-          canProceed = false;
-          errorMessage = 'Please select a risk profile';
-        }
-        break;
-      case 4:
-        if (!preferences.spendingHabits || !preferences.liquidityNeeds) {
-          canProceed = false;
-          errorMessage = 'Please complete spending habits and liquidity needs';
-        }
-        break;
-      default:
-        break;
+  const handlePrev = () => {
+    if (currentStep > 0) {
+      setCurrentStep(currentStep - 1);
     }
+  };
 
-    if (!canProceed) {
-      setError(errorMessage);
-      return;
-    }
-
-    setError(null);
-    setCurrentStep(prev => prev + 1);
-  }, [currentStep, preferences, loading, error]);
-
-  const handleBack = useCallback(() => {
-    setError(null);
-    setCurrentStep(prev => Math.max(1, prev - 1));
-  }, []);
+  const handleSubmit = () => {
+    // Handle form submission
+  };
 
   const renderStep = () => {
     if (loading) {
@@ -348,7 +309,7 @@ const StartInvestingWizard = () => {
       data: preferences,
       updateData,
       nextStep: handleNext,
-      prevStep: handleBack,
+      prevStep: handlePrev,
       submitForm: submitInvestmentPreferences,
       loading,
       error
