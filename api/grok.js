@@ -8,19 +8,18 @@ export default async function handler(req, res) {
   }
 
   try {
-    // forward the entire body to x.ai
-    const grokRes = await axios.post(
+    const apiRes = await axios.post(
       'https://api.x.ai/v1/chat/completions',
       req.body,
       {
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${API_KEY}`,
+          Authorization: `Bearer ${API_KEY}`
         },
-        timeout: 30000,
+        timeout: 30000
       }
     );
-    return res.status(200).json(grokRes.data);
+    return res.status(200).json(apiRes.data);
   } catch (err) {
     console.error('Proxy error:', err.response?.data || err.message);
     return res
