@@ -105,10 +105,6 @@ async function makeApiRequest(question) {
   
   while (attempt < MAX_RETRIES) {
     try {
-      if (process.env.NODE_ENV === 'development') {
-        console.log(`Making AI advisor request (attempt ${attempt + 1})`);
-      }
-      
       const requestPayload = {
         model: config.MODEL,
         messages: [
@@ -126,11 +122,6 @@ async function makeApiRequest(question) {
         stream: false
       };
       
-      if (process.env.NODE_ENV === 'development') {
-        console.log(`Request payload:`, requestPayload);
-        console.log(`→ Calling Grok proxy at ${config.BASE_URL}${config.ENDPOINT} with model ${config.MODEL}`);
-      }
-      
       const response = await axios({
         method: 'post',
         url: `${config.BASE_URL}${config.ENDPOINT}`,
@@ -146,9 +137,6 @@ async function makeApiRequest(question) {
       }
 
       const content = response.data.choices[0].message.content.trim();
-      if (process.env.NODE_ENV === 'development') {
-        console.log(`Raw API response content:`, content);
-      }
 
       return {
         advice: content,
@@ -159,22 +147,28 @@ async function makeApiRequest(question) {
       };
 
     } catch (error) {
-      if (process.env.NODE_ENV === 'development') {
-        console.error(`API request failed (attempt ${attempt + 1}):`, error);
-      }
       lastError = error;
       attempt++;
       
       if (attempt < MAX_RETRIES) {
-        if (process.env.NODE_ENV === 'development') {
-          console.log(`Retrying in ${RETRY_DELAY}ms...`);
-        }
         await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
       }
     }
   }
   
-  throw lastError || new Error('Failed to get AI advice after multiple attempts');
+  // Enhance error message based on the error type
+  let errorMessage = 'Failed to get AI advice after multiple attempts';
+  if (lastError?.response?.status === 401) {
+    errorMessage = 'Authentication error with AI service';
+  } else if (lastError?.response?.status === 429) {
+    errorMessage = 'Rate limit exceeded. Please try again later.';
+  } else if (lastError?.code === 'ECONNABORTED') {
+    errorMessage = 'Request timeout. Please try again.';
+  } else if (lastError?.response?.data?.error) {
+    errorMessage = lastError.response.data.error;
+  }
+  
+  throw new Error(errorMessage);
 }
 
 export async function getAIAdvice(question) {
@@ -186,9 +180,7 @@ export async function getAIAdvice(question) {
     return await makeApiRequest(question);
 
   } catch (error) {
-    if (process.env.NODE_ENV === 'development') {
-      console.error('AI Advisor error:', error);
-    }
+    console.error('AI Advisor error:', error.message);
     throw error;
   }
 } 
