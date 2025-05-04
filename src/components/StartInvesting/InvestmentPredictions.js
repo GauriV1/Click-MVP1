@@ -31,6 +31,22 @@ ChartJS.register(
 const InvestmentPredictions = ({ predictions, _monthlyAmount, preferences }) => {
   const [_AIAdvice, setAIAdvice] = useState(null);
 
+  // Add default values for missing props
+  const safePredictions = predictions || {
+    projectedGrowth: { '1yr': 0, '5yr': 0, '10yr': 0 },
+    expectedReturn: { min: 0, max: 0 },
+    riskMetrics: { volatilityScore: 0, originalProfile: '', adjustedProfile: '' },
+    suggestions: [],
+    warnings: [],
+    notes: '',
+    reasoning: ''
+  };
+
+  const safePreferences = preferences || {
+    depositAmount: '0',
+    depositFrequency: 'monthly'
+  };
+
   useEffect(() => {
     const fetchAIAdvice = async () => {
       try {
@@ -55,12 +71,12 @@ const InvestmentPredictions = ({ predictions, _monthlyAmount, preferences }) => 
 
   // Calculate annual deposit for display
   const getAnnualDeposit = () => {
-    const amount = Number(preferences.depositAmount);
-    switch (preferences.depositFrequency) {
+    const amount = Number(safePreferences.depositAmount);
+    switch (safePreferences.depositFrequency) {
       case 'weekly': return amount * 52;
       case 'monthly': return amount * 12;
       case 'yearly': return amount;
-      case 'ad hoc': return amount; // For ad hoc, we'll use the input amount as annual estimate
+      case 'ad hoc': return amount;
       default: return amount;
     }
   };
@@ -72,7 +88,7 @@ const InvestmentPredictions = ({ predictions, _monthlyAmount, preferences }) => 
     const years = [1, 5, 10];
     const projectedValues = years.map(year => {
       const totalDeposits = annualDeposit * year;
-      const growthPercentage = predictions.projectedGrowth[`${year}yr`];
+      const growthPercentage = safePredictions.projectedGrowth[`${year}yr`];
       return totalDeposits * (1 + growthPercentage / 100);
     });
 
@@ -144,21 +160,21 @@ const InvestmentPredictions = ({ predictions, _monthlyAmount, preferences }) => 
     <div className="predictions-container">
       <div className="predictions-header">
         <h2>Your Investment Forecast</h2>
-        {predictions.warnings && predictions.warnings.length > 0 && (
+        {safePredictions.warnings && safePredictions.warnings.length > 0 && (
           <div className="warnings-section">
             <h3>Important Considerations</h3>
             <ul className="warnings-list">
-              {predictions.warnings.map((warning, index) => (
+              {safePredictions.warnings.map((warning, index) => (
                 <li key={index}>{warning}</li>
               ))}
             </ul>
           </div>
         )}
-        {predictions.reasoning && (
+        {safePredictions.reasoning && (
           <div className="ai-reasoning">
             <h3>Investment Strategy Analysis</h3>
             <div className="reasoning-text">
-              {predictions.reasoning.split('\n').map((paragraph, index) => (
+              {safePredictions.reasoning.split('\n').map((paragraph, index) => (
                 paragraph ? <p key={index}>{paragraph}</p> : null
               ))}
             </div>
@@ -180,7 +196,7 @@ const InvestmentPredictions = ({ predictions, _monthlyAmount, preferences }) => 
         <div className="timeline-cards">
           {[1, 5, 10].map(year => {
             const totalDeposits = annualDeposit * year;
-            const growthPercentage = predictions.projectedGrowth[`${year}yr`];
+            const growthPercentage = safePredictions.projectedGrowth[`${year}yr`];
             const projectedValue = totalDeposits * (1 + growthPercentage / 100);
             
             return (
@@ -200,7 +216,7 @@ const InvestmentPredictions = ({ predictions, _monthlyAmount, preferences }) => 
         <div className="metric-card">
           <h3>Expected Annual Return</h3>
           <div className="metric-value">
-            {predictions.expectedReturn.min.toFixed(1)}% - {predictions.expectedReturn.max.toFixed(1)}%
+            {safePredictions.expectedReturn.min.toFixed(1)}% - {safePredictions.expectedReturn.max.toFixed(1)}%
           </div>
           <p className="metric-description">
             Projected return range based on market analysis and your risk profile
@@ -209,37 +225,37 @@ const InvestmentPredictions = ({ predictions, _monthlyAmount, preferences }) => 
         <div className="metric-card">
           <h3>Risk Assessment</h3>
           <div className="metric-value">
-            {predictions.riskMetrics.volatilityScore.toFixed(1)}/10
+            {safePredictions.riskMetrics.volatilityScore.toFixed(1)}/10
           </div>
           <div className="risk-profile-adjustment">
-            {predictions.riskMetrics.originalProfile !== predictions.riskMetrics.adjustedProfile && (
+            {safePredictions.riskMetrics.originalProfile !== safePredictions.riskMetrics.adjustedProfile && (
               <p className="profile-change">
-                Adjusted from <span className="original">{predictions.riskMetrics.originalProfile}</span> to{' '}
-                <span className="adjusted">{predictions.riskMetrics.adjustedProfile}</span>
+                Adjusted from <span className="original">{safePredictions.riskMetrics.originalProfile}</span> to{' '}
+                <span className="adjusted">{safePredictions.riskMetrics.adjustedProfile}</span>
               </p>
             )}
           </div>
           <p className="metric-description">
-            {predictions.riskMetrics.volatilityScore <= 3 
+            {safePredictions.riskMetrics.volatilityScore <= 3 
               ? "Conservative: Lower risk, stable returns"
-              : predictions.riskMetrics.volatilityScore <= 7
+              : safePredictions.riskMetrics.volatilityScore <= 7
                 ? "Moderate: Balanced risk and return"
                 : "Aggressive: Higher risk, growth focused"}
           </p>
         </div>
       </div>
 
-      {predictions.notes && (
+      {safePredictions.notes && (
         <div className="notes-section">
           <h3>Important Notes</h3>
-          <p>{predictions.notes}</p>
+          <p>{safePredictions.notes}</p>
         </div>
       )}
 
       <div className="suggestions-section">
         <h3>What would Click Invest In For You</h3>
         <div className="suggestions-grid">
-          {predictions.suggestions.map((suggestion, index) => (
+          {safePredictions.suggestions.map((suggestion, index) => (
             <div key={index} className="suggestion-card">
               {suggestion}
             </div>
@@ -249,25 +265,25 @@ const InvestmentPredictions = ({ predictions, _monthlyAmount, preferences }) => 
 
       <GrowthModelBox 
         growthModel={{
-          description: predictions.growthModel?.description || 'Investment growth model based on your risk profile and market conditions.',
-          assumptions: predictions.growthModel?.assumptions || [
+          description: safePredictions.growthModel?.description || 'Investment growth model based on your risk profile and market conditions.',
+          assumptions: safePredictions.growthModel?.assumptions || [
             'Market conditions remain relatively stable',
             'Regular investment contributions as planned',
             'Risk profile remains consistent'
           ],
-          factors: predictions.growthModel?.factors || [
+          factors: safePredictions.growthModel?.factors || [
             'Current market trends',
             'Historical volatility',
             'Economic indicators'
           ],
-          methodology: predictions.growthModel?.methodology || 'Calculations factor in compound interest, market volatility, and risk adjustments'
+          methodology: safePredictions.growthModel?.methodology || 'Calculations factor in compound interest, market volatility, and risk adjustments'
         }}
-        projectedGrowth={predictions.projectedGrowth}
+        projectedGrowth={safePredictions.projectedGrowth}
       />
 
-      {predictions.disclaimer && (
+      {safePredictions.disclaimer && (
         <div className="demo-disclaimer">
-          <p>{predictions.disclaimer}</p>
+          <p>{safePredictions.disclaimer}</p>
         </div>
       )}
     </div>
