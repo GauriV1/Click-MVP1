@@ -14,7 +14,7 @@ import {
 } from 'chart.js';
 import GrowthModelBox from '../GrowthModelBox';
 import '../../styles/StartInvesting/InvestmentPredictions.css';
-import AIAdvisorService from '../../services/aiAdvisorService';
+import { getAIAdvice } from '../../services/aiAdvisorService';
 
 // Register ChartJS components
 ChartJS.register(
@@ -34,7 +34,7 @@ const InvestmentPredictions = ({ predictions, _monthlyAmount, preferences }) => 
   useEffect(() => {
     const fetchAIAdvice = async () => {
       try {
-        const advice = await AIAdvisorService.getAIAdvice(_monthlyAmount);
+        const advice = await getAIAdvice(_monthlyAmount);
         setAIAdvice(advice);
       } catch (error) {
         console.error('Error fetching AI advice:', error);

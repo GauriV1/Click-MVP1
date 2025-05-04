@@ -177,22 +177,18 @@ async function makeApiRequest(question) {
   throw lastError || new Error('Failed to get AI advice after multiple attempts');
 }
 
-const AIAdvisorService = {
-  getAIAdvice: async (question) => {
-    try {
-      if (!question || question.trim().length === 0) {
-        throw new Error('Please provide a question');
-      }
-
-      return await makeApiRequest(question);
-
-    } catch (error) {
-      if (process.env.NODE_ENV === 'development') {
-        console.error('AI Advisor error:', error);
-      }
-      throw error;
+export async function getAIAdvice(question) {
+  try {
+    if (!question || question.trim().length === 0) {
+      throw new Error('Please provide a question');
     }
-  }
-};
 
-export default AIAdvisorService; 
+    return await makeApiRequest(question);
+
+  } catch (error) {
+    if (process.env.NODE_ENV === 'development') {
+      console.error('AI Advisor error:', error);
+    }
+    throw error;
+  }
+} 
