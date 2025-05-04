@@ -152,23 +152,14 @@ async function makeApiRequest(question) {
       
       if (attempt < MAX_RETRIES) {
         await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
+        continue;
       }
+
+      // Extract error message from the response
+      const errorMessage = error.response?.data?.message || error.response?.data?.error || error.message;
+      throw new Error(errorMessage);
     }
   }
-  
-  // Enhance error message based on the error type
-  let errorMessage = 'Failed to get AI advice after multiple attempts';
-  if (lastError?.response?.status === 401) {
-    errorMessage = 'Authentication error with AI service';
-  } else if (lastError?.response?.status === 429) {
-    errorMessage = 'Rate limit exceeded. Please try again later.';
-  } else if (lastError?.code === 'ECONNABORTED') {
-    errorMessage = 'Request timeout. Please try again.';
-  } else if (lastError?.response?.data?.error) {
-    errorMessage = lastError.response.data.error;
-  }
-  
-  throw new Error(errorMessage);
 }
 
 export async function getAIAdvice(question) {
@@ -180,7 +171,9 @@ export async function getAIAdvice(question) {
     return await makeApiRequest(question);
 
   } catch (error) {
-    console.error('AI Advisor error:', error.message);
-    throw error;
+    // Ensure we're always throwing an Error object with a proper message
+    const errorMessage = error.message || 'An unexpected error occurred';
+    console.error('AI Advisor error:', errorMessage);
+    throw new Error(errorMessage);
   }
 } 
