@@ -14,7 +14,7 @@ import {
 } from 'chart.js';
 import GrowthModelBox from '../GrowthModelBox';
 import '../../styles/StartInvesting/InvestmentPredictions.css';
-import { AIAdvisorService } from '../../services/aiAdvisorService';
+import AIAdvisorService from '../../services/aiAdvisorService';
 
 // Register ChartJS components
 ChartJS.register(
