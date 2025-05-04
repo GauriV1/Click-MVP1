@@ -176,7 +176,7 @@ const StartInvestingWizard = () => {
     console.log('Current Preferences:', preferences);
   }, [currentStep, preferences]);
 
-  const handleInputChange = useCallback((field, value) => {
+  const _handleInputChange = useCallback((field, value) => {
     if (!(field in initialPreferences)) {
       console.warn(`Warning: Attempting to set unknown field "${field}" in preferences`);
       return;
@@ -296,7 +296,7 @@ const StartInvestingWizard = () => {
     }
   };
 
-  const handleSubmit = () => {
+  const _handleSubmit = () => {
     // Handle form submission
   };
 

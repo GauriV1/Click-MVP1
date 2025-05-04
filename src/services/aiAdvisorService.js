@@ -8,7 +8,7 @@ const config = {
 };
 
 // Create an axios instance with default configuration
-const grokClient = axios.create({
+const _grokClient = axios.create({
   baseURL: config.BASE_URL,
   headers: {
     'Content-Type': 'application/json'
@@ -80,7 +80,7 @@ Remember:
 • Use "Click suggests" instead of "I suggest"
 • Max 1-2 emojis per message`;
 
-const validateResponse = (response) => {
+const _validateResponse = (response) => {
   const requiredFields = ['message', 'suggestions'];
   
   const missingFields = requiredFields.filter(field => !response[field]);
@@ -177,22 +177,22 @@ async function makeApiRequest(question) {
   throw lastError || new Error('Failed to get AI advice after multiple attempts');
 }
 
-export const getAIAdvice = async (question) => {
-  try {
-    if (!question || question.trim().length === 0) {
-      throw new Error('Please provide a question');
-    }
+const AIAdvisorService = {
+  getAIAdvice: async (question) => {
+    try {
+      if (!question || question.trim().length === 0) {
+        throw new Error('Please provide a question');
+      }
 
-    return await makeApiRequest(question);
+      return await makeApiRequest(question);
 
-  } catch (error) {
-    if (process.env.NODE_ENV === 'development') {
-      console.error('AI Advisor error:', error);
+    } catch (error) {
+      if (process.env.NODE_ENV === 'development') {
+        console.error('AI Advisor error:', error);
+      }
+      throw error;
     }
-    throw error;
   }
 };
 
-export default {
-  getAIAdvice
-}; 
+export default AIAdvisorService; 

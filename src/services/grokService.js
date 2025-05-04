@@ -10,7 +10,7 @@ class GrokAPIError extends Error {
   }
 }
 
-class ValidationError extends Error {
+class _ValidationError extends Error {
   constructor(message, fields = []) {
     super(message);
     this.name = 'ValidationError';
@@ -244,8 +244,7 @@ const extractAndRepairJson = (text) => {
   }
 };
 
-// Update transformResponse to use the new extraction
-const transformResponse = (response) => {
+const _transformResponse = (response) => {
   try {
     console.log('Transforming response:', response);
     
@@ -274,7 +273,7 @@ const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 async function makeApiRequest(payload, requestId) {
   const startTime = Date.now();
   let attempt = 0;
-  let lastError = null;
+  let _lastError = null;
   
   while (attempt < API_CONFIG.MAX_RETRIES) {
     try {

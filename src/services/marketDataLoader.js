@@ -1,4 +1,4 @@
-import axios from 'axios';
+import _axios from 'axios';
 
 const { STOCK_LIST } = require('../components/MarketViews/data/stockData');
 const { ETF_LIST } = require('../components/MarketViews/data/etfData');
@@ -39,7 +39,7 @@ const debug = (message, ...args) => {
 
 // Export functions to subscribe to market data events
 const onMarketDataReady = (callback) => {
-  const handler = (event) => callback(event.detail);
+  const handler = (_event) => callback(_event.detail);
   marketDataEvents.addEventListener(MARKET_DATA_READY, handler);
   return () => marketDataEvents.removeEventListener(MARKET_DATA_READY, handler);
 };
@@ -110,7 +110,7 @@ const MAX_RETRIES = 3;
 
 // Rate limiting state
 let lastRequestTime = 0;
-let requestCount = 0;
+let _requestCount = 0;
 
 // Utility function to wait for rate limit
 const waitForRateLimit = async () => {
@@ -227,7 +227,7 @@ const loadAllMarketData = async (forceReload = false) => {
   
   // Determine if this is a market open or close update
   const isOpenUpdate = currentHour === MARKET_OPEN_HOUR && currentMinute >= MARKET_OPEN_MINUTE;
-  const isCloseUpdate = currentHour === MARKET_CLOSE_HOUR && currentMinute >= MARKET_CLOSE_MINUTE;
+  const _isCloseUpdate = currentHour === MARKET_CLOSE_HOUR && currentMinute >= MARKET_CLOSE_MINUTE;
   
   // Check if we need to reload
   if (!forceReload && !shouldReloadData()) {
@@ -262,6 +262,10 @@ const loadAllMarketData = async (forceReload = false) => {
   let failureCount = 0;
   let retryQueue = [];
   
+  // Fix the loop function issue by moving successCount and failureCount outside
+  let batchSuccessCount = 0;
+  let batchFailureCount = 0;
+  
   try {
     // Process in batches with retry queue
     for (let i = 0; i < allSymbols.length; i += BATCH_SIZE) {
@@ -283,9 +287,8 @@ const loadAllMarketData = async (forceReload = false) => {
                 type
               };
               setCachedData(symbol, cachedData);
-              successCount++;
+              batchSuccessCount++;
               
-              // Emit individual symbol update
               marketDataEvents.dispatchEvent(new CustomEvent('symbolUpdate', { 
                 detail: { symbol, type, data: cachedData, success: true }
               }));
@@ -293,9 +296,8 @@ const loadAllMarketData = async (forceReload = false) => {
               return { symbol, type, success: true };
             } catch (error) {
               retryQueue.push({ symbol, type });
-              failureCount++;
+              batchFailureCount++;
               
-              // Emit individual symbol error
               marketDataEvents.dispatchEvent(new CustomEvent('symbolError', { 
                 detail: { symbol, type, error: error.message }
               }));
@@ -304,6 +306,14 @@ const loadAllMarketData = async (forceReload = false) => {
             }
           })
         );
+        
+        // Update success and failure counts
+        successCount += batchSuccessCount;
+        failureCount += batchFailureCount;
+        
+        // Reset batch counters
+        batchSuccessCount = 0;
+        batchFailureCount = 0;
         
         // Emit batch progress
         marketDataEvents.dispatchEvent(new CustomEvent('batchProgress', { 
