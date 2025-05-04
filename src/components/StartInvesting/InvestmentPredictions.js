@@ -29,7 +29,7 @@ ChartJS.register(
 );
 
 const InvestmentPredictions = ({ predictions, _monthlyAmount, preferences }) => {
-  const [AIAdvice, setAIAdvice] = useState(null);
+  const [_AIAdvice, setAIAdvice] = useState(null);
 
   useEffect(() => {
     const fetchAIAdvice = async () => {
