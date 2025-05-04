@@ -11,6 +11,7 @@ import QuickLinks from './components/QuickLinks';
 import LandingContent from './components/LandingContent';
 import StocksView from './components/StocksView/StocksView';
 import './styles/App.css';
+import './styles/global.css';
 
 function App() {
   useEffect(() => {
@@ -26,27 +27,29 @@ function App() {
   }, []);
 
   return (
-    <div className="app-container">
-      <Background />
-      <div className="overlay-content">
-        <Header />
-        <Routes>
-          <Route
-            path="/"
-            element={
-              <>
-                <Tagline />
-                <LandingContent />
-                <QuickLinks />
-              </>
-            }
-          />
-          <Route path="/about" element={<AboutPage />} />
-          <Route path="/services" element={<Services />} />
-          <Route path="/invest" element={<StartInvestingWizard />} />
-          <Route path="/ai-advisor" element={<AIAdvisor />} />
-          <Route path="/stocks" element={<StocksView />} />
-        </Routes>
+    <div className="main-container">
+      <div className="app-container">
+        <Background />
+        <div className="overlay-content">
+          <Header />
+          <Routes>
+            <Route
+              path="/"
+              element={
+                <>
+                  <Tagline />
+                  <LandingContent />
+                  <QuickLinks />
+                </>
+              }
+            />
+            <Route path="/about" element={<AboutPage />} />
+            <Route path="/services" element={<Services />} />
+            <Route path="/invest" element={<StartInvestingWizard />} />
+            <Route path="/ai-advisor" element={<AIAdvisor />} />
+            <Route path="/stocks" element={<StocksView />} />
+          </Routes>
+        </div>
       </div>
     </div>
   );
