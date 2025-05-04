@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { Line } from 'react-chartjs-2';
 import {
@@ -14,6 +14,7 @@ import {
 } from 'chart.js';
 import GrowthModelBox from '../GrowthModelBox';
 import '../../styles/StartInvesting/InvestmentPredictions.css';
+import { AIAdvisorService } from '../../services/aiAdvisorService';
 
 // Register ChartJS components
 ChartJS.register(
@@ -28,6 +29,21 @@ ChartJS.register(
 );
 
 const InvestmentPredictions = ({ predictions, _monthlyAmount, preferences }) => {
+  const [AIAdvice, setAIAdvice] = useState(null);
+
+  useEffect(() => {
+    const fetchAIAdvice = async () => {
+      try {
+        const advice = await AIAdvisorService.getAIAdvice(_monthlyAmount);
+        setAIAdvice(advice);
+      } catch (error) {
+        console.error('Error fetching AI advice:', error);
+      }
+    };
+
+    fetchAIAdvice();
+  }, [_monthlyAmount]);
+
   if (!predictions) {
     return (
       <div className="predictions-container error">
