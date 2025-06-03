@@ -7,8 +7,8 @@ export default function Tagline() {
   
   return (
     <div className="tagline">
-      <h1>AI-Powered Investment Intelligence</h1>
-      <h2>Experience the future of personal investing. Click delivers precise, data-driven investment strategies in seconds—powered by advanced AI, backed by market expertise.</h2>
+      <h1>Click invests for you—your proxy agent. Sit back, let it run on autopilot.</h1>
+      <p>Investing made easy: Click acts as your proxy agent and does the work for you. Take a backseat—let it manage your portfolio on autopilot.</p>
       <div className="cta-buttons">
         <button 
           className="cta-button primary-cta" 
