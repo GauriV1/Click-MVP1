@@ -3,8 +3,7 @@ import axios from 'axios';
 // API Configuration
 const config = {
   BASE_URL: '', // calls relative to your own domain
-  ENDPOINT: '/api/grok',
-  MODEL: 'grok-3-mini-fast-beta'
+  ENDPOINT: '/api/grok'
 };
 
 // Create an axios instance with default configuration
@@ -106,7 +105,6 @@ async function makeApiRequest(question) {
   while (attempt < MAX_RETRIES) {
     try {
       const requestPayload = {
-        model: config.MODEL,
         messages: [
           {
             role: "system",
@@ -116,10 +114,7 @@ async function makeApiRequest(question) {
             role: "user",
             content: question
           }
-        ],
-        temperature: 0.7,
-        max_tokens: 1000,
-        stream: false
+        ]
       };
       
       const response = await axios({
@@ -157,6 +152,7 @@ async function makeApiRequest(question) {
 
       // Extract error message from the response
       const errorMessage = error.response?.data?.message || error.response?.data?.error || error.message;
+      console.error('AI Advisor error (response?):', error.response?.data || error.message);
       throw new Error(errorMessage);
     }
   }

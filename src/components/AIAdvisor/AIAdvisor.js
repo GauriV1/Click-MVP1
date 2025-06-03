@@ -23,14 +23,13 @@ const AIAdvisor = () => {
     setUserMessage(''); // Clear input field
 
     try {
-      const response = await getAIAdvice(userMessage);
+      const responseText = await getAIAdvice(userMessage);
       
       // Format the AI response for display
       const aiMessage = {
         role: 'assistant',
-        content: response.message,
-        suggestions: response.suggestions,
-        resources: response.resources
+        content: responseText.advice,
+        metadata: responseText.metadata
       };
 
       setChatHistory(prev => [...prev, aiMessage]);
