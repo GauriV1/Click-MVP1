@@ -27,10 +27,25 @@ const AIAdvisor = () => {
       const responseText = await getAIAdvice(userMessage);
       console.log("🔧 AIAdvisor.handleSend - responseText:", responseText);
       
+      // Parse the response content as JSON
+      let parsedContent;
+      try {
+        parsedContent = JSON.parse(responseText.advice);
+      } catch (e) {
+        // If parsing fails, use the raw text
+        parsedContent = {
+          message: responseText.advice,
+          suggestions: [],
+          resources: []
+        };
+      }
+      
       // Format the AI response for display
       const aiMessage = {
         role: 'assistant',
-        content: responseText.advice,
+        content: parsedContent.message,
+        suggestions: parsedContent.suggestions,
+        resources: parsedContent.resources,
         metadata: responseText.metadata
       };
 
