@@ -267,8 +267,6 @@ const _transformResponse = (response) => {
   }
 };
 
-const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
-
 // Enhanced investment predictions function
 export async function getInvestmentPredictions(preferences) {
   const requestId = generateRequestId();
