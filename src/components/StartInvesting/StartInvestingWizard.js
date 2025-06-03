@@ -178,10 +178,9 @@ const StartInvestingWizard = () => {
 
   const _handleInputChange = useCallback((field, value) => {
     if (!(field in initialPreferences)) {
-      console.warn(`Warning: Attempting to set unknown field "${field}" in preferences`);
+      console.info(`Field "${field}" not found in preferences schema`);
       return;
     }
-    console.log('Updating field:', field, 'with value:', value);
     setPreferences(prev => ({
       ...prev,
       [field]: value
@@ -189,20 +188,17 @@ const StartInvestingWizard = () => {
   }, []);
 
   const updateData = useCallback((updatedFields) => {
-    console.log('Updating multiple fields:', updatedFields);
     setPreferences(prev => {
       const newPreferences = {
         ...prev,
         ...updatedFields
       };
-      console.log('New preferences state:', newPreferences);
       return newPreferences;
     });
   }, []);
 
   // Enhanced error handling
   const handleError = useCallback((error, context = '') => {
-    console.error(`Error in ${context}:`, error);
     let userMessage = 'An unexpected error occurred. Please try again.';
 
     if (error.message.includes('API response structure')) {
@@ -214,15 +210,6 @@ const StartInvestingWizard = () => {
     }
 
     setError(userMessage);
-    setDebugLog(prev => ({
-      ...prev,
-      lastError: {
-        timestamp: new Date().toISOString(),
-        context,
-        error: error.message,
-        stack: error.stack
-      }
-    }));
   }, []);
 
   const submitInvestmentPreferences = useCallback(async (event) => {

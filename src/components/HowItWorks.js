@@ -9,22 +9,22 @@ export default function HowItWorks() {
         <div className="step-item">
           <div className="step-number">1</div>
           <h3>Tell Us About You</h3>
-          <p>One quick quiz—weekly or lump sum, student or freelancer, conservative or aggressive.</p>
+          <p>One quick assessment—your investment frequency, professional background, and risk preferences.</p>
         </div>
         <div className="step-item">
           <div className="step-number">2</div>
-          <h3>We Ask Grok</h3>
-          <p>We feed your profile and live market data into Grok 3 Mini. It returns concise projections on potential returns, volatility bands, and high-level portfolio mix suggestions.</p>
+          <h3>AI-Powered Analysis</h3>
+          <p>Our advanced AI model processes your profile and real-time market data to generate precise projections, risk assessments, and portfolio recommendations.</p>
         </div>
         <div className="step-item">
           <div className="step-number">3</div>
-          <h3>You See Your Plan</h3>
-          <p>Interactive charts lay out what you could earn—and what risks to expect—all in plain English.</p>
+          <h3>Your Personalized Plan</h3>
+          <p>Interactive visualizations present your potential returns and risk metrics in clear, actionable terms.</p>
         </div>
       </div>
       <div className="coming-soon">
-        <h3>We're Just Getting Started</h3>
-        <p>This MVP is powered by our custom AI agent that solely operates on the same logic our AI model will - assuming a 95% accuracy.  Our full platform (coming soon) will layer in proprietary forecasting engines, RL agents, and secure transaction logic</p>
+        <h3>Platform Evolution</h3>
+        <p>This MVP demonstrates our core AI capabilities with 95% accuracy. Our full platform will integrate proprietary forecasting engines, reinforcement learning agents, and secure transaction infrastructure.</p>
       </div>
     </section>
   );

@@ -6,17 +6,17 @@ const LoadingScreen = () => {
     <div className="loading-screen">
       <div className="loading-content">
         <div className="loading-spinner"></div>
-        <h2>Analyzing Your Financial Profile</h2>
+        <h2>Analyzing Your Investment Profile</h2>
         <div className="loading-steps">
-          <p>✓ Processing your investment preferences</p>
-          <p>✓ Analyzing risk factors</p>
-          <p className="active">⟳ Calculating personalized investment strategy</p>
-          <p>• Preparing growth projections</p>
-          <p>• Generating investment recommendations</p>
+          <p>✓ Processing investment preferences</p>
+          <p>✓ Evaluating risk parameters</p>
+          <p className="active">⟳ Generating personalized strategy</p>
+          <p>• Calculating growth projections</p>
+          <p>• Optimizing portfolio allocation</p>
         </div>
         <p className="loading-description">
-          Click's AI is carefully analyzing your profile to create a personalized investment strategy 
-          that aligns with your goals and risk tolerance.
+          Our AI engine is analyzing your profile to create a sophisticated investment strategy 
+          tailored to your financial objectives and risk tolerance.
         </p>
       </div>
     </div>

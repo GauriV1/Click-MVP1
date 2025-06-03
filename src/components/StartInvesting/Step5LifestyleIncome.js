@@ -67,8 +67,11 @@ export default function Step5_LifestyleIncome({ data = {}, updateData, prevStep 
     
     if (!localData.monthlySalary) {
       newErrors.monthlySalary = 'Please enter your monthly salary';
-    } else if (Number(localData.monthlySalary) < 0) {
-      newErrors.monthlySalary = 'Monthly salary must be positive';
+    } else {
+      const salary = Number(localData.monthlySalary);
+      if (isNaN(salary) || salary <= 0) {
+        newErrors.monthlySalary = 'Monthly salary must be a positive number';
+      }
     }
 
     // Validate age
@@ -83,7 +86,8 @@ export default function Step5_LifestyleIncome({ data = {}, updateData, prevStep 
 
     // Validate emergency fund amount if provided
     if (localData.emergencyNeeds) {
-      if (isNaN(localData.emergencyNeeds) || Number(localData.emergencyNeeds) < 0) {
+      const amount = Number(localData.emergencyNeeds);
+      if (isNaN(amount) || amount < 0) {
         newErrors.emergencyNeeds = 'Emergency fund amount must be a non-negative number';
       }
     }

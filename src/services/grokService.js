@@ -46,15 +46,15 @@ const grokClient = axios.create({
 
 // Add authorization header dynamically
 grokClient.interceptors.request.use((config) => {
-  const apiKey = API_CONFIG.API_KEY;
+  const apiKey = process.env.REACT_APP_GROK_API_KEY;
   if (!apiKey) {
-  console.error('Missing Grok API key. Please set REACT_APP_GROK_API_KEY environment variable.');
     if (process.env.REACT_APP_USE_FALLBACK_DATA === 'true') {
-      console.warn('Fallback data is enabled, will use demo data');
+      console.info('Using fallback data for demo purposes');
       return Promise.reject(new Error('API key not found - using fallback data'));
     }
+    console.error('Missing Grok API key. Please set REACT_APP_GROK_API_KEY environment variable.');
     return Promise.reject(new Error('API key not found'));
-}
+  }
   config.headers.Authorization = `Bearer ${apiKey}`;
   return config;
 }, (error) => {

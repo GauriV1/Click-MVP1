@@ -52,12 +52,11 @@ const LandingContent = () => {
       </section>
 
       <section className="founders-section">
-        <h2>Meet the Founders</h2>
+        <h2>Meet the Founder</h2>
         <div className="founders-content">
-          <p className="founders-quote">"We're Gauri & Fowzan—two 19-year-olds who got tired of opaque robo-advisors. We built Click to prove that everyday investors deserve AI tools built for them."</p>
+          <p className="founders-quote">"I'm Gauri—a 19-year-old who got tired of opaque robo-advisors. I built Click to prove that everyday investors deserve AI tools built for them."</p>
           <div className="founders-info">
             <p>– Gauri Vaidya, Economics & Computer Science</p>
-            <p>– Fowzan Malik, Full-Stack Engineer</p>
           </div>
         </div>
       </section>

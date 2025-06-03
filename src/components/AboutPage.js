@@ -95,9 +95,9 @@ const AboutPage = () => {
         </p>
 
         <p className="founder-note">
-          Founded by Gauri Vaidya and Fowzan Malik, our platform transforms generic automation into 
+          Founded by Gauri Vaidya, Click transforms generic automation into 
           personalized, intelligent, and adaptive portfolio management, capturing fleeting opportunities 
-          to generate market beating alpha! - See you on the other side ~ G & F
+          to generate market beating alpha! - See you on the other side ~ G
         </p>
       </div>
     </div>

@@ -6,7 +6,7 @@ const FINNHUB_BASE_URL = 'https://finnhub.io/api/v1';
 const USE_MOCK_DATA = !FINNHUB_API_KEY || FINNHUB_API_KEY === 'your_finnhub_api_key_here';
 
 if (USE_MOCK_DATA) {
-  console.warn('Missing Finnhub API key. Using fallback data.');
+  console.info('Using mock market data for demo purposes');
 }
 
 // Cache for storing stock data

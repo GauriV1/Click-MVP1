@@ -45,105 +45,114 @@ This service handles automated market data loading for stocks, ETFs, and bonds a
 - Moment.js for time calculations
 - Node-schedule for task scheduling
 
-# Click MVP1
+# Click - AI-Powered Investment Intelligence Platform
 
-An AI-powered investment platform that democratizes trading and empowers investors.
-
-## Setup
-
-1. Clone the repository:
-   ```
-   git clone https://github.com/yourusername/click-mvp1.git
-   cd click-mvp1
-   ```
-
-2. Install dependencies:
-   ```
-   npm install
-   ```
-
-3. Create a `.env` file in the root directory with the following variables:
-   ```
-   # API Keys
-   REACT_APP_FINNHUB_API_KEY=your_finnhub_api_key_here
-   GROK_API_KEY=your_grok_api_key_here
-   
-   # Feature Flags
-   REACT_APP_USE_FALLBACK_DATA=false
-   ```
-
-4. Start the development server:
-   ```
-   npm start
-   ```
+Click is an innovative investment platform that leverages advanced AI to provide personalized investment strategies and portfolio management. Built by Gauri Vaidya as part of YC W25 batch, Click aims to democratize access to sophisticated investment tools.
 
 ## Features
 
-- Real-time market data visualization
-- AI-powered investment recommendations
-- Portfolio tracking and analysis
-- Risk assessment and management
-- Educational resources for investors
+- AI-powered investment strategy generation
+- Real-time market data integration
+- Personalized risk assessment
+- Interactive portfolio visualization
+- Secure data handling with GDPR compliance
 
 ## Tech Stack
 
-- **Frontend**: React, Chart.js, Axios
-- **Backend**: Node.js, Express
-- **APIs**: Finnhub, Grok AI
-- **Deployment**: Vercel
+- React 18
+- Node.js
+- Grok AI API
+- Finnhub Market Data API
+- Chart.js for visualizations
+- Material-UI components
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js 16.x or later
+- npm 7.x or later
+- Grok API key (for production)
+- Finnhub API key (for production)
+
+### Installation
+
+1. Clone the repository:
+```bash
+git clone https://github.com/yourusername/click.git
+cd click
+```
+
+2. Install dependencies:
+```bash
+npm install
+```
+
+3. Create a `.env.local` file in the root directory with the following variables:
+```
+REACT_APP_GROK_API_KEY=your_grok_api_key
+REACT_APP_FINNHUB_API_KEY=your_finnhub_api_key
+REACT_APP_USE_FALLBACK_DATA=true  # Set to false in production
+```
+
+4. Start the development server:
+```bash
+npm start
+```
+
+The app will be available at http://localhost:3000 (or http://localhost:3001 if port 3000 is in use).
+
+### Development
+
+- `npm start` - Start development server
+- `npm run build` - Build for production
+- `npm run lint` - Run ESLint
+- `npm run lint:fix` - Fix ESLint issues
+- `npm run clean` - Clear build cache
+
+## Deployment
+
+Click is configured for deployment on Vercel. Each push to the main branch will trigger an automatic deployment.
+
+### Manual Deployment
+
+1. Install Vercel CLI:
+```bash
+npm i -g vercel
+```
+
+2. Deploy:
+```bash
+vercel
+```
+
+For production deployment:
+```bash
+vercel --prod
+```
 
 ## Environment Variables
 
-The following environment variables are required:
-
-- `REACT_APP_FINNHUB_API_KEY`: Your Finnhub API key
-- `GROK_API_KEY`: Your Grok API key (server-side only)
-- `REACT_APP_USE_FALLBACK_DATA`: Whether to use fallback data when API calls fail
-
-## API Proxy for Grok
-
-To avoid CORS issues when calling the Grok API, we use a Vercel serverless function:
-
-1. The frontend makes requests to `/api/grok` instead of directly to the Grok API
-2. The Vercel serverless function (`/api/grok.js`) forwards these requests to the Grok API
-3. The API key is stored server-side as `GROK_API_KEY` (without the REACT_APP_ prefix)
-4. This approach prevents CORS errors and keeps the API key secure
-
-### Deployment
-
-When deploying to Vercel:
-
-1. Set the `GROK_API_KEY` environment variable (without the REACT_APP_ prefix):
-   ```
-   vercel env add GROK_API_KEY production
-   # → paste your Grok key
-   
-   vercel env add GROK_API_KEY preview
-   # → paste your Grok key
-   ```
-
-2. Deploy your project:
-   ```
-   vercel --prod --force
-   ```
-
-3. The frontend will automatically use the serverless function endpoint
-4. No changes to the frontend code are needed
+| Variable | Description | Required |
+|----------|-------------|----------|
+| REACT_APP_GROK_API_KEY | Grok AI API key | Yes (prod) |
+| REACT_APP_FINNHUB_API_KEY | Finnhub API key | Yes (prod) |
+| REACT_APP_USE_FALLBACK_DATA | Use mock data | No |
 
 ## Contributing
 
 1. Fork the repository
 2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is proprietary and confidential. All rights reserved.
 
-## Acknowledgments
+## Contact
 
-- Finnhub for providing market data
-- Grok AI for investment recommendations
-- All contributors who have helped shape this project 
+Gauri Vaidya - [@gaurivaidya](https://twitter.com/gaurivaidya)
+
+Project Link: [https://github.com/yourusername/click](https://github.com/yourusername/click) 

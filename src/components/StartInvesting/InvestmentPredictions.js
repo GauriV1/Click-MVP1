@@ -311,9 +311,20 @@ InvestmentPredictions.propTypes = {
     notes: PropTypes.string,
     reasoning: PropTypes.string,
     disclaimer: PropTypes.string
-  }),
+  }).isRequired,
   _monthlyAmount: PropTypes.number,
-  preferences: PropTypes.object
+  preferences: PropTypes.shape({
+    depositAmount: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    depositFrequency: PropTypes.oneOf(['weekly', 'monthly', 'yearly', 'ad hoc'])
+  })
+};
+
+InvestmentPredictions.defaultProps = {
+  _monthlyAmount: 0,
+  preferences: {
+    depositAmount: '0',
+    depositFrequency: 'monthly'
+  }
 };
 
 export default InvestmentPredictions; 

@@ -7,7 +7,7 @@ export default function Header() {
     <header className="header">
       <Link to="/" className="logo">
         <span className="logo-text">Click</span>
-        <span className="logo-subtext">Democratizing Trading, Empowering Investors</span>
+        <span className="logo-subtext">Intelligent Investment Management</span>
       </Link>
       <nav>
         <ul className="nav-links">

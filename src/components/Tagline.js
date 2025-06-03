@@ -7,14 +7,14 @@ export default function Tagline() {
   
   return (
     <div className="tagline">
-      <h1>Investing for Everyone</h1>
-      <h2>Managing your money shouldn't feel like rocket science. Click shows you clear, data-driven projections in under five seconds—no jargon, no hidden fees.</h2>
+      <h1>AI-Powered Investment Intelligence</h1>
+      <h2>Experience the future of personal investing. Click delivers precise, data-driven investment strategies in seconds—powered by advanced AI, backed by market expertise.</h2>
       <div className="cta-buttons">
         <button 
           className="cta-button primary-cta" 
           onClick={() => navigate('/invest')}
         >
-          Start Investing
+          Start Your Journey
         </button>
       </div>
     </div>
