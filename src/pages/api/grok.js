@@ -36,7 +36,13 @@ export default async function handler(req, res) {
     console.log("✅ /api/grok got response:", JSON.stringify(data));
     return res.status(200).json(data);
   } catch (error) {
-    console.error("Error in Grok API route:", error);
-    return res.status(500).json({ error: 'Internal server error' });
+    // Enhanced error logging
+    if (error.response) {
+      const errorText = error.response.text ? await error.response.text() : '';
+      console.error("Error in Grok API route (response):", error.response.status, errorText);
+    } else {
+      console.error("Error in Grok API route:", error.stack || error);
+    }
+    return res.status(500).json({ error: error.message || error.toString() });
   }
 } 

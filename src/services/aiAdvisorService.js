@@ -155,8 +155,12 @@ async function makeApiRequest(question) {
       }
 
       // Extract error message from the response
-      const errorMessage = error.response?.data?.message || error.response?.data?.error || error.message;
-      console.error('AI Advisor error (response?):', error.response?.data || error.message);
+      const errorMessage =
+        error.response?.data?.error ||
+        error.response?.data?.message ||
+        error.message ||
+        JSON.stringify(error);
+      console.error('AI Advisor error (response?):', errorMessage);
       throw new Error(errorMessage);
     }
   }
