@@ -387,11 +387,47 @@ export async function getInvestmentPredictions(preferences) {
 
     // Make API request
     console.log(`[${requestId}] Making API request to Grok`);
-    const response = await makeApiRequest(preferences, requestId);
-    console.log(`[${requestId}] Received API response:`, response);
-    return response;
+    const response = await grokClient.post(API_CONFIG.ENDPOINTS.CHAT, {
+      messages: [
+        {
+          role: "system",
+          content: systemPrompt
+        },
+        {
+          role: "user",
+          content: JSON.stringify(preferences)
+        }
+      ]
+    });
+
+    if (!response.data?.choices?.[0]?.message?.content) {
+      throw new GrokAPIError('Invalid API response structure', 'INVALID_RESPONSE');
+    }
+
+    const content = response.data.choices[0].message.content.trim();
+    console.log(`[${requestId}] Raw API response content:`, content);
+
+    // Parse and validate the response
+    const parsedResult = JSON.parse(content);
+    
+    // Log risk profile changes if they occur
+    if (parsedResult.riskMetrics && 
+        parsedResult.riskMetrics.originalProfile !== parsedResult.riskMetrics.adjustedProfile) {
+      console.log(`[${requestId}] Risk profile adjusted from ${parsedResult.riskMetrics.originalProfile} to ${parsedResult.riskMetrics.adjustedProfile}`);
+    }
+    
+    // Add metadata to the response
+    return {
+      ...parsedResult,
+      metadata: {
+        requestId,
+        timestamp: new Date().toISOString(),
+        isDemo: false
+      }
+    };
+
   } catch (error) {
-    console.error(`[${requestId}] Error getting investment predictions:`, error);
+    console.error(`[${requestId}] Error getting investment predictions:`, error.response?.data || error.message);
     throw error;
   }
 }
