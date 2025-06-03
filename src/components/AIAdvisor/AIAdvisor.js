@@ -26,21 +26,25 @@ const AIAdvisor = () => {
       console.log("🔧 AIAdvisor.handleSend - userInput:", userMessage);
       const responseText = await getAIAdvice(userMessage);
       console.log("🔧 AIAdvisor.handleSend - responseText:", responseText);
-      
+
+      // If the response is an error, display it
+      if (responseText && responseText.error) {
+        setError(responseText.error);
+        return;
+      }
+
       // Parse the response content as JSON
       let parsedContent;
       try {
         parsedContent = JSON.parse(responseText.advice);
       } catch (e) {
-        // If parsing fails, use the raw text
         parsedContent = {
           message: responseText.advice,
           suggestions: [],
           resources: []
         };
       }
-      
-      // Format the AI response for display
+
       const aiMessage = {
         role: 'assistant',
         content: parsedContent.message,
@@ -139,7 +143,7 @@ const AIAdvisor = () => {
         )}
         {error && (
           <div className="error-message">
-            {error}
+            {typeof error === 'string' ? error : JSON.stringify(error)}
           </div>
         )}
       </div>

@@ -131,6 +131,11 @@ async function makeApiRequest(question) {
 
       console.log("⬇️ getAIAdvice got raw response:", response);
 
+      // If the API returns an error, return it directly
+      if (response.data && response.data.error) {
+        return { error: response.data.error };
+      }
+
       if (!response.data?.choices?.[0]?.message?.content) {
         throw new Error('Invalid API response structure');
       }
