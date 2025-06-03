@@ -198,7 +198,7 @@ const StartInvestingWizard = () => {
   }, []);
 
   // Enhanced error handling
-  const handleError = useCallback((error, context = '') => {
+  const handleError = useCallback((error, _context = '') => {
     let userMessage = 'An unexpected error occurred. Please try again.';
 
     if (error.message.includes('API response structure')) {

@@ -101,7 +101,7 @@ const _validateResponse = (response) => {
 
 async function makeApiRequest(question) {
   let attempt = 0;
-  let lastError = null;
+  let _lastError = null;
   
   while (attempt < MAX_RETRIES) {
     try {
@@ -147,7 +147,7 @@ async function makeApiRequest(question) {
       };
 
     } catch (error) {
-      lastError = error;
+      _lastError = error;
       attempt++;
       
       if (attempt < MAX_RETRIES) {
