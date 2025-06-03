@@ -1,4 +1,6 @@
 export default async function handler(req, res) {
+  console.log("🔍 /api/grok called with body:", JSON.stringify(req.body));
+
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -31,6 +33,7 @@ export default async function handler(req, res) {
     }
 
     const data = await response.json();
+    console.log("✅ /api/grok got response:", JSON.stringify(data));
     return res.status(200).json(data);
   } catch (error) {
     console.error("Error in Grok API route:", error);

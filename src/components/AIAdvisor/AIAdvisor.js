@@ -23,7 +23,9 @@ const AIAdvisor = () => {
     setUserMessage(''); // Clear input field
 
     try {
+      console.log("🔧 AIAdvisor.handleSend - userInput:", userMessage);
       const responseText = await getAIAdvice(userMessage);
+      console.log("🔧 AIAdvisor.handleSend - responseText:", responseText);
       
       // Format the AI response for display
       const aiMessage = {

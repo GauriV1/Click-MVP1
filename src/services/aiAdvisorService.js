@@ -117,6 +117,8 @@ async function makeApiRequest(question) {
         ]
       };
       
+      console.log("🛫 getAIAdvice sending to /api/grok:", JSON.stringify(requestPayload));
+      
       const response = await axios({
         method: 'post',
         url: `${config.BASE_URL}${config.ENDPOINT}`,
@@ -126,6 +128,8 @@ async function makeApiRequest(question) {
         data: requestPayload,
         timeout: 60000
       });
+
+      console.log("⬇️ getAIAdvice got raw response:", response);
 
       if (!response.data?.choices?.[0]?.message?.content) {
         throw new Error('Invalid API response structure');
