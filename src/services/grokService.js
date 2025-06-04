@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Custom error classes for better error handling
-class GrokAPIError extends Error {
+class _GrokAPIError extends Error {
   constructor(message, code, details = {}) {
     super(message);
     this.name = 'GrokAPIError';
@@ -19,7 +19,7 @@ class _ValidationError extends Error {
 }
 
 // Request ID generator
-const generateRequestId = () => {
+const _generateRequestId = () => {
   return `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 };
 
@@ -36,7 +36,7 @@ const API_CONFIG = {
 };
 
 // Create an axios instance with default configuration
-const grokClient = axios.create({
+const _grokClient = axios.create({
   baseURL: API_CONFIG.BASE_URL,
   headers: {
     'Content-Type': 'application/json'
@@ -45,7 +45,7 @@ const grokClient = axios.create({
 });
 
 // Add authorization header dynamically
-grokClient.interceptors.request.use((config) => {
+_grokClient.interceptors.request.use((config) => {
   const apiKey = process.env.REACT_APP_GROK_API_KEY;
   if (!apiKey) {
     if (process.env.REACT_APP_USE_FALLBACK_DATA === 'true') {
@@ -62,7 +62,7 @@ grokClient.interceptors.request.use((config) => {
 });
 
 // Enhanced system prompt to better explain the context and requirements
-const systemPrompt = `
+const _systemPrompt = `
 You are Click's Investment Prediction AI (Prototype). Click is world's first AI proxy, transparent wealth manager that:
 1. Learns from your age, emergency fund, risk appetite, income vs. investment ratio, and employment, and self corrects in real time. 
 2. Adapts risk on the fly—downgrading overly aggressive plans and explaining why in plain English.
@@ -126,7 +126,7 @@ Be concise. Return nothing else. Make sure to use language that an everyday huma
 `;
 
 // Enhanced validation with specific checks
-const validateUserPreferences = (preferences) => {
+const _validateUserPreferences = (preferences) => {
   console.log('Validating preferences:', preferences);
   const errors = [];
   
