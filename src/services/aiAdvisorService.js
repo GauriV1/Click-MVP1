@@ -6,7 +6,7 @@ import axios from "axios";
 export async function getAIAdvice(userQuestion) {
   // Build the messages payload for Grok
   const messages = [
-    { role: "system", content: "You are an AI investment advisor. Provide clear, concise guidance." },
+    { role: "system", content: "You are an AI investment advisor for Click. Provide clear, concise guidance." },
     { role: "user", content: userQuestion },
   ];
 
