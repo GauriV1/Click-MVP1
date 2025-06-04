@@ -283,49 +283,41 @@ export async function getInvestmentPredictions(preferences) {
       throw new Error(`Invalid preferences: ${validationResult.errors.join(', ')}`);
     }
 
-    // Make API request
-    console.log(`[${requestId}] Making API request to Grok`);
-    const response = await grokClient.post(API_CONFIG.ENDPOINTS.CHAT, {
-      messages: [
-        {
-          role: "system",
-          content: systemPrompt
-        },
-        {
-          role: "user",
-          content: JSON.stringify(preferences)
-        }
-      ]
-    });
+    // Build the "messages" for Grok:
+    const messages = [
+      {
+        role: "system",
+        content: "You are a financial AI that generates a personalized investment plan based on user preferences.",
+      },
+      {
+        role: "user",
+        content: JSON.stringify(preferences),
+      },
+    ];
 
-    if (!response.data?.choices?.[0]?.message?.content) {
-      throw new GrokAPIError('Invalid API response structure', 'INVALID_RESPONSE');
+    // Log what we're sending (for debugging)
+    console.log("🛫 getInvestmentPredictions sending to /api/grok:", messages);
+
+    // POST to our own API route
+    const response = await grokClient.post(API_CONFIG.ENDPOINTS.CHAT, { messages: messages });
+    console.log("⬇️ getInvestmentPredictions got raw response:", response.data);
+
+    // Extract the plan text from Grok's structure:
+    if (
+      response.data &&
+      Array.isArray(response.data.choices) &&
+      response.data.choices[0] &&
+      response.data.choices[0].message
+    ) {
+      return response.data.choices[0].message.content;
+    } else {
+      throw new Error("Invalid Grok response shape: " + JSON.stringify(response.data));
     }
-
-    const content = response.data.choices[0].message.content.trim();
-    console.log(`[${requestId}] Raw API response content:`, content);
-
-    // Parse and validate the response
-    const parsedResult = JSON.parse(content);
-    
-    // Log risk profile changes if they occur
-    if (parsedResult.riskMetrics && 
-        parsedResult.riskMetrics.originalProfile !== parsedResult.riskMetrics.adjustedProfile) {
-      console.log(`[${requestId}] Risk profile adjusted from ${parsedResult.riskMetrics.originalProfile} to ${parsedResult.riskMetrics.adjustedProfile}`);
-    }
-    
-    // Add metadata to the response
-    return {
-      ...parsedResult,
-      metadata: {
-        requestId,
-        timestamp: new Date().toISOString(),
-        isDemo: false
-      }
-    };
-
   } catch (error) {
-    console.error(`[${requestId}] Error getting investment predictions:`, error.response?.data || error.message);
+    console.error(
+      "grokService.getInvestmentPredictions – error:",
+      error.response?.data || error.message
+    );
     throw error;
   }
 }

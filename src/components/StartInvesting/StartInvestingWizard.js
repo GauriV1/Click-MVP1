@@ -249,27 +249,28 @@ const StartInvestingWizard = () => {
         }]
       }));
 
-      // Get predictions
-      const result = await getInvestmentPredictions(preferences);
+      // Call Grok service for predictions
+      const planText = await getInvestmentPredictions(preferences);
+      
+      // Update predictions state
+      setPredictions(planText);
       
       // Log successful response
       setDebugLog(prev => ({
         ...prev,
         lastResponse: {
           timestamp: new Date().toISOString(),
-          result
+          success: true
         }
       }));
 
-      // Update state with predictions
-      setPredictions(result);
-      setCurrentStep(currentStep + 1);
     } catch (error) {
-      handleError(error, 'submitInvestmentPreferences');
+      console.error("StartInvestingWizard – Grok error:", error.response?.data || error.message);
+      handleError(error);
     } finally {
       setLoading(false);
     }
-  }, [preferences, currentStep, handleError]);
+  }, [preferences, handleError]);
 
   const handleNext = () => {
     if (currentStep < 6) {

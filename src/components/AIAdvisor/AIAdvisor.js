@@ -27,30 +27,10 @@ const AIAdvisor = () => {
       const responseText = await getAIAdvice(userMessage);
       console.log("🔧 AIAdvisor.handleSend - responseText:", responseText);
 
-      // If the response is an error, display it
-      if (responseText && responseText.error) {
-        setError(responseText.error);
-        return;
-      }
-
-      // Parse the response content as JSON
-      let parsedContent;
-      try {
-        parsedContent = JSON.parse(responseText.advice);
-      } catch (e) {
-        parsedContent = {
-          message: responseText.advice,
-          suggestions: [],
-          resources: []
-        };
-      }
-
+      // Add AI response to chat
       const aiMessage = {
         role: 'assistant',
-        content: parsedContent.message,
-        suggestions: parsedContent.suggestions,
-        resources: parsedContent.resources,
-        metadata: responseText.metadata
+        content: responseText
       };
 
       setChatHistory(prev => [...prev, aiMessage]);
@@ -70,40 +50,7 @@ const AIAdvisor = () => {
   };
 
   const renderMessage = (msg) => {
-    if (msg.role === 'user') {
-      return <div className="message-content">{msg.content}</div>;
-    }
-
-    return (
-      <>
-        <div className="message-content">{msg.content}</div>
-        
-        {msg.suggestions && msg.suggestions.length > 0 && (
-          <div className="suggestions-section">
-            {msg.suggestions.map((suggestion, idx) => (
-              <div key={idx} className="suggestion-item">
-                <h4>{suggestion.title}</h4>
-                <p>{suggestion.details}</p>
-              </div>
-            ))}
-          </div>
-        )}
-        
-        {msg.resources && msg.resources.length > 0 && (
-          <div className="resources-section">
-            <h4>Helpful Resources</h4>
-            {msg.resources.map((resource, idx) => (
-              <div key={idx} className="resource-item">
-                <a href={resource.link} target="_blank" rel="noopener noreferrer">
-                  {resource.title}
-                </a>
-                <p>{resource.description}</p>
-              </div>
-            ))}
-          </div>
-        )}
-      </>
-    );
+    return <div className="message-content">{msg.content}</div>;
   };
 
   return (

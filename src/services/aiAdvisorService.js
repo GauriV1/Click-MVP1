@@ -171,18 +171,37 @@ async function makeApiRequest(question) {
   }
 }
 
-export async function getAIAdvice(question) {
+/**
+ * Sends a single-message chat to Grok via /api/grok and returns the AI's reply.
+ */
+export async function getAIAdvice(userQuestion) {
+  // Build the conversation array for Grok:
+  const messages = [
+    { role: "system", content: "You are an AI investment advisor. Provide clear, concise advice." },
+    { role: "user", content: userQuestion },
+  ];
+
   try {
-    if (!question || question.trim().length === 0) {
-      throw new Error('Please provide a question');
+    // Log the outgoing request
+    console.log("🛫 getAIAdvice sending to /api/grok:", messages);
+
+    // Call our serverless proxy
+    const response = await axios.post("/api/grok", { messages: messages });
+    console.log("⬇️ getAIAdvice got raw response:", response.data);
+
+    // Validate structure and return only the content text
+    if (
+      response.data &&
+      Array.isArray(response.data.choices) &&
+      response.data.choices[0] &&
+      response.data.choices[0].message
+    ) {
+      return response.data.choices[0].message.content;
+    } else {
+      throw new Error("Invalid Grok response: " + JSON.stringify(response.data));
     }
-
-    return await makeApiRequest(question);
-
   } catch (error) {
-    // Ensure we're always throwing an Error object with a proper message
-    const errorMessage = error.message || 'An unexpected error occurred';
-    console.error('AI Advisor error:', errorMessage);
-    throw new Error(errorMessage);
+    console.error("aiAdvisorService.getAIAdvice – error:", error.response?.data || error.message);
+    throw error;
   }
 } 
