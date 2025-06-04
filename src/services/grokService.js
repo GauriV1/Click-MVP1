@@ -267,39 +267,29 @@ const _transformResponse = (response) => {
   }
 };
 
-// Enhanced investment predictions function
+/**
+ * Calls the serverless Grok proxy (/api/grok) with user preferences,
+ * and returns the AI's response string containing the investment plan.
+ */
 export async function getInvestmentPredictions(preferences) {
-  const requestId = generateRequestId();
-  console.log(`[${requestId}] Getting investment predictions with preferences:`, preferences);
-  
+  // Build the "messages" for Grok:
+  const messages = [
+    {
+      role: "system",
+      content: "You are a financial AI that generates a personalized investment plan based on user preferences.",
+    },
+    {
+      role: "user",
+      content: JSON.stringify(preferences),
+    },
+  ];
+
   try {
-    // Validate preferences
-    console.log(`[${requestId}] Validating preferences...`);
-    const validationResult = validateUserPreferences(preferences);
-    console.log(`[${requestId}] Validation result:`, validationResult);
-    
-    if (!validationResult.isValid) {
-      console.warn(`[${requestId}] Invalid preferences:`, validationResult.errors);
-      throw new Error(`Invalid preferences: ${validationResult.errors.join(', ')}`);
-    }
-
-    // Build the "messages" for Grok:
-    const messages = [
-      {
-        role: "system",
-        content: "You are a financial AI that generates a personalized investment plan based on user preferences.",
-      },
-      {
-        role: "user",
-        content: JSON.stringify(preferences),
-      },
-    ];
-
     // Log what we're sending (for debugging)
     console.log("🛫 getInvestmentPredictions sending to /api/grok:", messages);
 
     // POST to our own API route
-    const response = await grokClient.post(API_CONFIG.ENDPOINTS.CHAT, { messages: messages });
+    const response = await axios.post("/api/grok", { messages: messages });
     console.log("⬇️ getInvestmentPredictions got raw response:", response.data);
 
     // Extract the plan text from Grok's structure:
