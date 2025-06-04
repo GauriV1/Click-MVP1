@@ -19,7 +19,7 @@ const generateRequestId = () => {
 const API_CONFIG = {
   BASE_URL: '',               // same-origin
   ENDPOINTS: { CHAT: '/api/grok' },
-  MODEL: 'grok-3-mini-fast-beta',
+  MODEL: 'grok-3-mini-fast',
   VERSION: '1.0',
   MAX_RETRIES: 3,
   RETRY_DELAY: 2000,
