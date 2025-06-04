@@ -176,66 +176,6 @@ const validateUserPreferences = (preferences) => {
   };
 };
 
-// Improved JSON parsing with better extraction and repair
-const extractAndRepairJson = (text) => {
-  console.log('Raw text to parse:', text);
-  
-  try {
-    // First try direct parsing in case it's already valid JSON
-    try {
-      return JSON.parse(text);
-    } catch (e) {
-      console.log('Direct parsing failed, attempting repair...');
-    }
-
-    // Try to extract JSON block with more robust regex
-    const jsonRegex = /\{(?:[^{}]|(?:\{[^{}]*\}))*\}/g;
-    const matches = text.match(jsonRegex);
-    
-    if (!matches) {
-      console.error('No JSON object found in text');
-      throw new Error('No JSON object found in response');
-    }
-
-    // Get the largest match as it's likely the complete JSON
-    let jsonStr = matches.reduce((a, b) => a.length > b.length ? a : b);
-    console.log('Extracted potential JSON:', jsonStr);
-
-    // Common repairs
-    jsonStr = jsonStr
-      // Fix unquoted property names
-      .replace(/([{,]\s*)(\w+)(\s*:)/g, '$1"$2"$3')
-      // Remove trailing commas before closing braces
-      .replace(/,(\s*[}\]])/g, '$1')
-      // Fix single quotes to double quotes
-      .replace(/'/g, '"')
-      // Ensure numbers are valid JSON
-      .replace(/(\d+)%/g, '$1')
-      // Fix common formatting issues
-      .replace(/\n/g, ' ')
-      .replace(/\r/g, '')
-      .replace(/\t/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim();
-
-    // Ensure all properties and string values are properly quoted
-    jsonStr = jsonStr.replace(/(['"])?([a-zA-Z0-9_]+)(['"])?:/g, '"$2":');
-
-    // Try to parse the repaired JSON
-    try {
-      const parsed = JSON.parse(jsonStr);
-      console.log('Successfully parsed repaired JSON');
-      return parsed;
-    } catch (parseError) {
-      console.error('Failed to parse repaired JSON:', parseError);
-      throw new Error(`Failed to parse JSON: ${parseError.message}`);
-    }
-  } catch (error) {
-    console.error('Error in extractAndRepairJson:', error);
-    throw error;
-  }
-};
-
 // Enhanced investment predictions function
 export async function getInvestmentPredictions(preferences) {
   const requestId = generateRequestId();
