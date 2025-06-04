@@ -178,10 +178,22 @@ const validateUserPreferences = (preferences) => {
 
 // Enhanced investment predictions function
 export async function getInvestmentPredictions(preferences) {
+  // Generate request ID for tracking
+  const requestId = generateRequestId();
+  console.log(`[${requestId}] Getting investment predictions with preferences:`, preferences);
+
+  // Validate user preferences
+  const validationResult = validateUserPreferences(preferences);
+  if (!validationResult.isValid) {
+    const errorMessage = `Invalid preferences: ${validationResult.errors.join(", ")}`;
+    console.warn(`[${requestId}] ${errorMessage}`);
+    throw new GrokAPIError(errorMessage, 'VALIDATION_ERROR', { errors: validationResult.errors });
+  }
+
   const messages = [
     {
       role: "system",
-      content: "You are a financial AI that generates a personalized investment plan based on user preferences.",
+      content: systemPrompt,
     },
     {
       role: "user",
@@ -190,9 +202,9 @@ export async function getInvestmentPredictions(preferences) {
   ];
 
   try {
-    console.log("🛫 getInvestmentPredictions sending to /api/grok:", messages);
+    console.log(`[${requestId}] Sending request to /api/grok:`, messages);
     const response = await axios.post("/api/grok", { messages: messages });
-    console.log("⬇️ getInvestmentPredictions got raw response:", response.data);
+    console.log(`[${requestId}] Received response:`, response.data);
 
     if (
       response.data &&
@@ -202,11 +214,24 @@ export async function getInvestmentPredictions(preferences) {
     ) {
       return response.data.choices[0].message.content;
     } else {
-      throw new Error("Invalid Grok response shape: " + JSON.stringify(response.data));
+      const errorMessage = `Invalid Grok response shape: ${JSON.stringify(response.data)}`;
+      console.error(`[${requestId}] ${errorMessage}`);
+      throw new GrokAPIError(errorMessage, 'INVALID_RESPONSE', { response: response.data });
     }
   } catch (error) {
-    console.error("grokService.getInvestmentPredictions – error:", error.response?.data || error.message);
-    throw error;
+    console.error(`[${requestId}] Error in getInvestmentPredictions:`, error.response?.data || error.message);
+    
+    // If it's already a GrokAPIError, rethrow it
+    if (error instanceof GrokAPIError) {
+      throw error;
+    }
+    
+    // Otherwise, wrap it in a GrokAPIError
+    throw new GrokAPIError(
+      error.response?.data?.message || error.message || 'Unknown error occurred',
+      error.response?.status || 'UNKNOWN_ERROR',
+      { originalError: error }
+    );
   }
 }
 
