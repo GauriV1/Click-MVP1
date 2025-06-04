@@ -1,15 +1,6 @@
 import axios from 'axios';
 
 // Custom error classes for better error handling
-class _GrokAPIError extends Error {
-  constructor(message, code, details = {}) {
-    super(message);
-    this.name = 'GrokAPIError';
-    this.code = code;
-    this.details = details;
-  }
-}
-
 class _ValidationError extends Error {
   constructor(message, fields = []) {
     super(message);
@@ -17,11 +8,6 @@ class _ValidationError extends Error {
     this.fields = fields;
   }
 }
-
-// Request ID generator
-const _generateRequestId = () => {
-  return `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-};
 
 // Enhanced API configuration
 const API_CONFIG = {
@@ -60,70 +46,6 @@ _grokClient.interceptors.request.use((config) => {
 }, (error) => {
   return Promise.reject(error);
 });
-
-// Enhanced system prompt to better explain the context and requirements
-const _systemPrompt = `
-You are Click's Investment Prediction AI (Prototype). Click is world's first AI proxy, transparent wealth manager that:
-1. Learns from your age, emergency fund, risk appetite, income vs. investment ratio, and employment, and self corrects in real time. 
-2. Adapts risk on the fly—downgrading overly aggressive plans and explaining why in plain English.
-3. Projects returns and suggests ETF allocations in seconds, with clear summaries of your key metrics.
-4. This is a demo trailer of what the full Click system will ultimately deliver for everyday investors.
-
-INPUT FACTORS (equal weight):  
-• Age  
-• Emergency fund (3–6× monthly expenses)  
-• Selected risk profile  
-• Income vs. investment ratio  
-• Employment status  
-(Also consider liquidity needs and spending habits with slightly less weight.)
-
-CALCULATIONS:  
-• Monthly expenses = 62% of salary  
-• Required emergency fund = 3–6 × monthly expenses  
-• Investment ratio = monthly investment ÷ salary  
-
-OVERRIDE LOGIC:  
-If factors conflict (e.g., student earning $1,800/mo investing $1,400/mo under Aggressive), lower risk by 1–2 levels and explain.
-
-OUTPUT ONLY valid JSON with these fields:
-{
-  "adjustedRisk": string,             // final risk level
-  "expectedReturn": {                 // annual return % range
-    "min": number,
-    "max": number
-  },
-  "projectedGrowth": {                // growth % over time
-    "1yr": number,
-    "5yr": number,
-    "10yr": number
-  },
-  "riskMetrics": {                    // risk details
-    "volatilityScore": number,        // 0–1
-    "originalProfile": string,
-    "adjustedProfile": string,
-    "ageConsideration": string
-  },
-  "portfolioAllocations": {           // suggested % allocations
-    "CoreETFs": number,
-    "Bonds": number,
-    "International": number,
-    "SectorETFs": number
-  },
-  "suggestions": string[],            // specific ETF $ allocations
-  "warnings": string[],               // risk warnings
-  "notes": string,                    // strategy notes
-  "reasoning": string,                // detailed rationale
-  "summary": string,                  // bullet-style calc summary
-  "growthModel": {                    // model description
-    "description": string,
-    "assumptions": string[],
-    "factors": string[],
-    "methodology": string
-  }
-}
-
-Be concise. Return nothing else. Make sure to use language that an everyday human understands. Dont get too fancy. No emojis.
-`;
 
 // Enhanced validation with specific checks
 const _validateUserPreferences = (preferences) => {
