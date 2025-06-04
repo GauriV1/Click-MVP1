@@ -10,7 +10,7 @@ export default async function handler(req, res) {
         "Authorization": `Bearer ${process.env.GROK_API_KEY}`,
       },
       body: JSON.stringify({
-        model: "grok-3-mini-beta",
+        model: "grok-3-mini-fast",
         messages: messages,
         temperature: 0.7,
         max_tokens: 500,
